@@ -1,0 +1,24 @@
+name: 기능 구현
+description: 담당 범위와 완료 기준을 정하고 작업합니다.
+title: "[Feature] "
+body:
+  - type: textarea
+    id: requirements
+    attributes:
+      label: 기획 요구사항
+      description: 관련 기획 문서와 구현할 동작
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 담당 범위 / 공통 계약
+      description: 담당자, 수정할 폴더, API 및 타입 계약, 다른 작업과의 의존성
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 완료 기준 / 검증 방법
+    validations:
+      required: true
