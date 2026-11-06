@@ -52,7 +52,7 @@ export function LoginModal({
     if (mode === "login") {
       setPending(true);
       try {
-        const response = await loginPreview(identifier, password, remember);
+        const response = await loginPreview(identifier, password);
         if (!response.ok) setError(response.error);
         else await signedIn();
       } catch {

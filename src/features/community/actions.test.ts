@@ -11,7 +11,26 @@ import {
 } from "./actions";
 import { loadProduct } from "./product-loader";
 
-vi.mock("./session", () => ({ communityViewer: async () => null }));
+const identity = vi.hoisted(() => ({
+  current: null as { id: string; nickname: string } | null,
+}));
+vi.mock("./session", () => ({ communityViewer: async () => identity.current }));
+vi.mock("../../lib/auth/local-test", () => ({
+  loginLocalTest: vi.fn(async (id: string, password: string) => {
+    if (
+      process.env.NODE_ENV === "production" ||
+      id !== "member-id" ||
+      password !== "member-password"
+    )
+      return false;
+    identity.current = { id, nickname: "지혜" };
+    return true;
+  }),
+  localTestProfile: async () => identity.current,
+  logoutLocalTest: async () => {
+    identity.current = null;
+  },
+}));
 vi.mock("./product-loader", () => ({ loadProduct: vi.fn() }));
 
 const jar = vi.hoisted(() => new Map<string, string>());
@@ -25,6 +44,7 @@ vi.mock("next/headers", () => ({
 }));
 beforeEach(() => {
   jar.clear();
+  identity.current = null;
   vi.mocked(loadProduct).mockReset();
 });
 
@@ -45,7 +65,7 @@ describe("실제 상품 정보 연결", () => {
       ok: true,
       data: product,
     });
-    await loginPreview("1111", "1111", false);
+    await loginPreview("member-id", "member-password");
     const result = await savePost({
       productUrl: product.url,
       concern: "데일리로 입을까요?",
@@ -55,7 +75,7 @@ describe("실제 상품 정보 연결", () => {
     });
     expect(result.ok && result.data.product).toEqual(product);
     if (result.ok) {
-      const user = store.viewer(jar.get("buyornot-preview"))!;
+      const user = identity.current!;
       expect(store.detail(result.data.id, user).product).toEqual(product);
       store.posts.delete(result.data.id);
     }
@@ -74,7 +94,7 @@ describe("실제 상품 정보 연결", () => {
     };
     const created: string[] = [];
     try {
-      jar.set("buyornot-preview", a.token);
+      identity.current = a.viewer;
       const first = await savePost({
         ...input,
         authorId: b.viewer.id,
@@ -83,7 +103,7 @@ describe("실제 상품 정보 연결", () => {
       if (!first.ok) throw new Error(first.error);
       created.push(first.data.id);
       expect(first.data.authorId).toBe(a.viewer.id);
-      jar.set("buyornot-preview", b.token);
+      identity.current = b.viewer;
       const feed = await loadCommunity();
       expect(feed.ok && feed.data.viewer?.id).toBe(b.viewer.id);
       expect(
@@ -108,17 +128,18 @@ describe("실제 상품 정보 연결", () => {
           )
         ).ok,
       ).toBe(true);
-      jar.set("buyornot-preview", a.token);
+      identity.current = a.viewer;
       expect((await deletePost(second.data.id)).ok).toBe(false);
       expect(
         (await savePost({ ...input, concern: "첫 사용자 수정" }, first.data.id))
           .ok,
       ).toBe(true);
+      identity.current = null;
       jar.clear();
       expect((await deletePost(first.data.id)).ok).toBe(false);
-      jar.set("buyornot-preview", a.token);
+      identity.current = a.viewer;
       expect((await deletePost(first.data.id)).ok).toBe(true);
-      jar.set("buyornot-preview", b.token);
+      identity.current = b.viewer;
       expect((await deletePost(second.data.id)).ok).toBe(true);
     } finally {
       for (const id of created) store.posts.delete(id);
@@ -152,33 +173,28 @@ describe("개발용 임시 로그인", () => {
     expect(result.ok && result.data.viewer).toBeNull();
     expect((await votePost("sample-0", "BUY")).ok).toBe(false);
   });
-  it("개발 환경에서 1111로 로그인하고 투표한 뒤 로그아웃", async () => {
+  it("이전 1111 로그인과 남은 미리보기 쿠키를 거부한다", async () => {
     vi.stubEnv("NODE_ENV", "development");
-    expect((await loginPreview("1111", "wrong", false)).ok).toBe(false);
-    expect(jar.has("buyornot-preview")).toBe(false);
-    const login = await loginPreview("1111", "1111", true);
-    expect(login.ok).toBe(true);
-    const feed = await loadCommunity();
-    expect(feed.ok && feed.data.viewer).toEqual(login.ok ? login.data : null);
-    expect((await votePost("sample-0", "BUY")).ok).toBe(true);
-    await logoutDemo();
-    expect(jar.has("buyornot-preview")).toBe(false);
+    expect((await loginPreview("1111", "1111")).ok).toBe(false);
+    expect((await loginPreview("member@example.com", "1111")).ok).toBe(false);
+    jar.set("buyornot-preview", store.login().token);
+    const result = await loadCommunity();
+    expect(result.ok && result.data.viewer).toBeNull();
     expect((await votePost("sample-0", "BUY")).ok).toBe(false);
   });
-  it("1111 재로그인 후에도 작성자 권한을 유지한다", async () => {
+  it("지정한 계정으로 로그인하고 투표한 뒤 로그아웃한다", async () => {
     vi.stubEnv("NODE_ENV", "development");
-    const first = await loginPreview("1111", "1111", false);
+    expect((await loginPreview("member-id", "wrong")).ok).toBe(false);
+    const login = await loginPreview("member-id", "member-password");
+    expect(login.ok).toBe(true);
+    expect((await votePost("sample-0", "BUY")).ok).toBe(true);
     await logoutDemo();
-    const second = await loginPreview("1111", "1111", false);
-    expect(first.ok && second.ok && first.data.id === second.data.id).toBe(
-      true,
-    );
-    expect(second.ok && second.data.nickname).toBe("1111");
+    expect((await votePost("sample-0", "BUY")).ok).toBe(false);
   });
   it("프로덕션에서는 고정 자격 증명과 남은 세션도 차단", async () => {
     vi.stubEnv("NODE_ENV", "production");
     jar.set("buyornot-preview", store.login().token);
-    expect((await loginPreview("1111", "1111", true)).ok).toBe(false);
+    expect((await loginPreview("1111", "1111")).ok).toBe(false);
     const result = await loadCommunity();
     expect(result.ok && result.data.viewer).toBeNull();
     expect((await votePost("sample-0", "BUY")).ok).toBe(false);

@@ -7,19 +7,13 @@ import {
 } from "../../lib/auth/local-test";
 import { authConfig } from "../../lib/auth/config";
 import { authClient } from "../../lib/auth/server";
-import { memberProfile } from "../../app/(creator)/_server/posts";
 import { cookies } from "next/headers";
 import { store } from "./store";
 import { loadProduct } from "./product-loader";
 import { validateProductUrl } from "./product";
 import type { Choice, PostInput, Result, Viewer } from "./types";
-const previewAccount: Viewer = { id: "preview-1111", nickname: "1111" };
 async function viewer(): Promise<Viewer | null> {
-  const shared = await communityViewer();
-  if (shared) return shared;
-  if (process.env.NODE_ENV !== "development") return null;
-  const token = (await cookies()).get("buyornot-preview")?.value;
-  return store.viewer(token);
+  return communityViewer();
 }
 async function result<T>(fn: () => T | Promise<T>): Promise<Result<T>> {
   try {
@@ -37,40 +31,14 @@ export async function loadCommunity() {
     return { viewer: user, posts: store.list(user) };
   });
 }
-// Temporary local preview login. Replace with the agreed authentication provider.
-export async function loginPreview(
-  identifier: string,
-  password: string,
-  remember: boolean,
-) {
+// Shares the explicitly configured local accounts with curation and account pages.
+export async function loginPreview(identifier: string, password: string) {
   return result(async () => {
-    if (process.env.NODE_ENV !== "development")
-      throw new Error("임시 로그인은 개발 환경에서만 사용할 수 있습니다.");
     if (await loginLocalTest(identifier.trim(), password)) {
       const local = await localTestProfile();
       if (local) return { id: local.id, nickname: local.nickname };
     }
-    if (identifier.includes("@") && authConfig()) {
-      const client = await authClient();
-      const result = await client.auth.signInWithPassword({
-        email: identifier.trim(),
-        password,
-      });
-      if (result.error || !result.data.user)
-        throw new Error("아이디 또는 비밀번호가 올바르지 않습니다.");
-      const profile = memberProfile(result.data.user);
-      return { id: profile.id, nickname: profile.nickname };
-    }
-    if (identifier !== "1111" || password !== "1111")
-      throw new Error("아이디 또는 비밀번호가 올바르지 않습니다.");
-    const session = store.login(previewAccount);
-    (await cookies()).set("buyornot-preview", session.token, {
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-      ...(remember ? { maxAge: 86400 } : {}),
-    });
-    return session.viewer;
+    throw new Error("아이디 또는 비밀번호가 올바르지 않습니다.");
   });
 }
 export async function logoutDemo() {
