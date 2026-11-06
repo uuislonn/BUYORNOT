@@ -1,0 +1,61 @@
+.remember {
+  flex-direction: row !important;
+  align-items: center;
+  font-weight: 400 !important;
+}
+.options {
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+}
+.options > button {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  padding: 12px;
+}
+.options .kakao {
+  background: #fee500;
+  border-color: #fee500;
+}
+.recovery {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.recovery button,
+.back {
+  background: transparent;
+  color: #555;
+  padding: 10px;
+}
+.back {
+  margin-top: 16px;
+}
+
+.passwordField {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.passwordInput {
+  position: relative;
+}
+.passwordInput input {
+  padding-right: 48px !important;
+}
+.passwordToggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 44px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: #777;
+  border-radius: 8px;
+}

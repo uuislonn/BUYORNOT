@@ -1,0 +1,46 @@
+.share {
+  position: relative;
+}
+.share .button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  color: #656565;
+}
+.share .button:hover {
+  background: #f0f0f2;
+  color: #131313;
+}
+.button svg {
+  width: 24px;
+  height: 24px;
+}
+.feedback {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 2;
+  width: min(280px, calc(100vw - 80px));
+  padding: 14px;
+  border: 1px solid #dedee3;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 10%);
+}
+.feedback p {
+  margin: 0;
+  color: #333;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.feedback input {
+  width: 100%;
+  min-width: 0;
+  margin-top: 10px;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 13px;
+}

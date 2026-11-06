@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "BUYORNOT",
-  description: "BUYORNOT 공동 개발 환경",
+  description: "함께 고르는 구매 고민 투표 커뮤니티",
 };
 
 export default function RootLayout({

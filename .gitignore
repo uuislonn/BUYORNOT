@@ -9,3 +9,9 @@ npm-debug.log*
 .DS_Store
 .vercel/
 next-env.d.ts
+
+# Local test account credentials
+.local-test-accounts/
+
+# Private community runtime storage
+.data/

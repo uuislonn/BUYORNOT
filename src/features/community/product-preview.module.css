@@ -1,0 +1,43 @@
+.preview {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px;
+  border: 1px solid #e1e1e7;
+  background: #fafafa;
+  border-radius: 10px;
+}
+.preview img,
+.retry {
+  width: 100px;
+  height: 120px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  object-fit: contain;
+  background: #f0f0f2;
+}
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.info > span {
+  color: #666;
+  font-size: 11px;
+}
+.info > strong {
+  font-size: 14px;
+  line-height: 1.5;
+}
+.preview .info p {
+  margin: 0;
+  color: #111;
+  font-size: 15px;
+  font-weight: 700;
+}
+.preview .info a {
+  margin: 0;
+  font-size: 11px;
+}

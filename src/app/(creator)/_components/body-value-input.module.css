@@ -1,0 +1,17 @@
+.inputWrap {
+  position: relative;
+  display: block;
+}
+.inputWrap > input {
+  width: 100%;
+  padding-right: 38px !important;
+}
+.inputWrap > span {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #959baa;
+  font-size: 12px;
+  pointer-events: none;
+}
