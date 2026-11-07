@@ -7,6 +7,7 @@ import {
 } from "../../lib/auth/local-test";
 import { headers, cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { loginPreview } from "../../features/community/actions";
 import { authClient, currentUser } from "../../lib/auth/server";
 import {
   authConfig,
@@ -32,6 +33,19 @@ export async function submitAuth(
   mode: string,
   form: FormData,
 ): Promise<AuthResult> {
+  if (
+    mode === "login" &&
+    process.env.NODE_ENV === "development" &&
+    String(form.get("email") || "").trim() === "1111"
+  ) {
+    const result = await loginPreview(
+      "1111",
+      String(form.get("password") || ""),
+      false,
+    );
+    if (!result.ok) return { message: result.error };
+    redirect("/community");
+  }
   if (
     mode === "login" &&
     (await loginLocalTest(

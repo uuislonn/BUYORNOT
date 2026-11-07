@@ -26,6 +26,12 @@ describe("홈과 커뮤니티 연결", () => {
     expect(html).not.toContain("살말 투표 커뮤니티");
   });
 
+  it("홈의 Login은 큐레이션과 같은 공통 로그인 페이지로 연결된다", () => {
+    const html = renderToStaticMarkup(createElement(Home));
+    expect(html).toMatch(/<a\b(?=[^>]*href="\/login")[^>]*>Login<\/a>/);
+    expect(html).not.toContain("<dialog");
+  });
+
   it("커뮤니티 로고는 홈으로, Community 메뉴는 피드로 이동한다", () => {
     const html = renderToStaticMarkup(createElement(Community));
     expect(html).toMatch(

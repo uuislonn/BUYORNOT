@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { loadCommunity } from "../community/actions";
 import { SiteHeader } from "../../components/site-header";
-import { LoginModal } from "../community/login-modal";
 import { Modal } from "../community/modal";
 import styles from "./home.module.css";
 
@@ -23,7 +22,6 @@ export default function Home() {
       active = false;
     };
   }, []);
-  const [login, setLogin] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
   return (
@@ -32,7 +30,7 @@ export default function Home() {
         currentPage="home"
         loggedIn={loggedIn}
         accountLabel={loggedIn ? "My Page" : undefined}
-        onAccount={() => (loggedIn ? router.push("/account") : setLogin(true))}
+        onAccount={() => router.push(loggedIn ? "/account" : "/login")}
       />
 
       <main className={styles.main}>
@@ -43,9 +41,12 @@ export default function Home() {
             <span>모두의 한 표를 만나보세요.</span>
           </h1>
           <div className={styles.heroActions}>
-            <button className={styles.button} onClick={() => setLogin(true)}>
-              Login
-            </button>
+            <Link
+              href={loggedIn ? "/account" : "/login"}
+              className={styles.button}
+            >
+              {loggedIn ? "My Page" : "Login"}
+            </Link>
             <Link href="/community" className={styles.outlineButton}>
               Explore the Feed
             </Link>
@@ -159,15 +160,6 @@ export default function Home() {
         </div>
       </footer>
 
-      {login && (
-        <LoginModal
-          close={() => setLogin(false)}
-          signedIn={async () => {
-            setLogin(false);
-            router.push("/community");
-          }}
-        />
-      )}
       {notice && (
         <Modal title={notice} close={() => setNotice(null)}>
           <p>

@@ -8,12 +8,14 @@ export type AuthMode = "login" | "signup" | "reset" | "update";
 export function LoginForm({
   mode = "login",
   localTestEnabled = false,
+  previewEnabled = false,
   configured = false,
   kakaoEnabled = false,
   initialNotice = "",
 }: {
   mode?: AuthMode;
   localTestEnabled?: boolean;
+  previewEnabled?: boolean;
   configured?: boolean;
   kakaoEnabled?: boolean;
   initialNotice?: string;
@@ -22,6 +24,8 @@ export function LoginForm({
   const [notice, setNotice] = useState(initialNotice);
   const [pending, startTransition] = useTransition();
   const [done, setDone] = useState(false);
+  const acceptsIdentifier =
+    mode === "login" && (localTestEnabled || previewEnabled);
   const titles = {
     login: "다시 만나서 반가워요",
     signup: "나만의 취향을 시작해요",
@@ -114,21 +118,17 @@ export function LoginForm({
                 {mode !== "update" && (
                   <>
                     <label className={s.label} htmlFor="email">
-                      {mode === "login" && localTestEnabled
-                        ? "아이디 또는 이메일"
-                        : "이메일"}
+                      {acceptsIdentifier ? "아이디 또는 이메일" : "이메일"}
                     </label>
                     <input
                       className={s.input}
                       id="email"
                       name="email"
-                      type={
-                        mode === "login" && localTestEnabled ? "text" : "email"
-                      }
+                      type={acceptsIdentifier ? "text" : "email"}
                       autoComplete={mode === "login" ? "username" : "email"}
                       maxLength={254}
                       placeholder={
-                        mode === "login" && localTestEnabled
+                        acceptsIdentifier
                           ? "아이디 또는 이메일"
                           : "이메일 주소를 입력해 주세요"
                       }
@@ -218,6 +218,11 @@ export function LoginForm({
                 </button>
               </fieldset>
             </form>
+            {mode === "login" && previewEnabled && (
+              <p className={s.notice}>
+                개발용 미리보기는 아이디와 비밀번호에 1111을 입력해 주세요.
+              </p>
+            )}
             {(mode === "login" || mode === "signup") && (
               <>
                 <div className={s.divider}>
