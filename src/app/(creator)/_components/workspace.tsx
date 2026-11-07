@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
+import { SiteHeader } from "../../../components/site-header";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import * as actions from "../_server/actions";
 import {
@@ -290,44 +291,10 @@ export function CreatorWorkspace({ initial }: { initial: Snapshot }) {
         ? "이유 있는 추천"
         : "크리에이터 개설 신청";
   return (
-    <div className={s.shell}>
-      <header className={s.siteHeader}>
-        <Link href="/" className={s.wordmark} aria-label="Buy or Not 홈">
-          <span>Buy or Not</span>
-        </Link>
-        <nav className={s.headerNav} aria-label="주요 메뉴">
-          <Link href="/community">살말 커뮤니티</Link>
-          <button
-            type="button"
-            aria-current={view === "room" ? "page" : undefined}
-            onClick={() => query({ view: "room" })}
-          >
-            큐레이션 룸
-          </button>
-          <button
-            type="button"
-            aria-current={view === "shop" ? "page" : undefined}
-            onClick={() => query({ view: "shop" })}
-          >
-            추천 숍 <span className={s.navDot} />
-          </button>
-        </nav>
-        <div className={s.headerRight}>
-          <button type="button" className={s.applyLink} onClick={apply}>
-            {data.ownApplication ? "내 개설 신청" : "룸 개설하기"}
-            <span aria-hidden="true">↗</span>
-          </button>
-          <button
-            type="button"
-            className={s.accountButton}
-            onClick={() => {
-              router.push(data.viewer ? "/account" : "/login");
-            }}
-          >
-            {data.viewer ? data.viewer.nickname : "로그인"}
-          </button>
-        </div>
-      </header>
+    <CreatorPageLayout
+      loggedIn={!!data.viewer}
+      onAccount={() => router.push(data.viewer ? "/account" : "/login")}
+    >
       <main className={s.main}>
         <div className={s.breadcrumb}>
           CREATOR&apos;S ROOM <span>/</span> {data.creator.handle}
@@ -825,7 +792,10 @@ export function CreatorWorkspace({ initial }: { initial: Snapshot }) {
           <span>YOUR TASTE MATTERS.</span>
           <p>좋은 선택은, 좋은 질문에서 시작되니까.</p>
           <button type="button" onClick={apply}>
-            당신의 큐레이션 룸을 열어보세요 <Icon name="arrow" size={17} />
+            {data.ownApplication
+              ? "내 개설 신청"
+              : "당신의 큐레이션 룸을 열어보세요"}{" "}
+            <Icon name="arrow" size={17} />
           </button>
         </div>
       </main>
@@ -1086,9 +1056,33 @@ export function CreatorWorkspace({ initial }: { initial: Snapshot }) {
           )}
         </Modal>
       )}
-    </div>
+    </CreatorPageLayout>
   );
 }
+
+// Keep creator-scoped resets away from the shared site header.
+function CreatorPageLayout({
+  loggedIn,
+  onAccount,
+  children,
+}: {
+  loggedIn: boolean;
+  onAccount: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <>
+      <SiteHeader
+        currentPage="curation"
+        loggedIn={loggedIn}
+        accountLabel={loggedIn ? "My Page" : undefined}
+        onAccount={onAccount}
+      />
+      <div className={s.shell}>{children}</div>
+    </>
+  );
+}
+
 function ShopCard({
   item,
   comment,
@@ -1112,12 +1106,19 @@ function ShopCard({
           aria-label={`${item.product.name} 외부 쇼핑몰에서 보기`}
         >
           {item.product.image ? (
-            <SamplePhoto source={item.product.image} alt={item.product.name} />
+            <SamplePhoto
+              source={item.product.image}
+              alt={item.product.name}
+              fit="cover"
+            />
           ) : (
             <div className={s.imageFallback}>
               <Icon name="bag" size={40} />
             </div>
           )}
+          <span className={s.shoppingHover} aria-hidden="true">
+            <span>쇼핑몰에서 보기 ↗</span>
+          </span>
         </a>
         <span className={s.shopBadge}>O BUY PICK</span>
         <button

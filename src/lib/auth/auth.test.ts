@@ -11,6 +11,10 @@ const mocks = vi.hoisted(() => ({
   from: vi.fn(),
   currentUser: vi.fn(),
   remove: vi.fn(),
+  previewLogin: vi.fn(),
+}));
+vi.mock("../../features/community/actions", () => ({
+  loginPreview: mocks.previewLogin,
 }));
 vi.mock("./server", () => ({
   authClient: async () => ({ auth: mocks.auth, from: mocks.from }),
@@ -60,6 +64,36 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllEnvs());
 describe("real auth actions", () => {
+  it("공통 로그인 화면에서도 기존 1111 개발 로그인을 처리한다", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    mocks.previewLogin.mockResolvedValue({
+      ok: true,
+      data: { id: "preview-1111", nickname: "1111" },
+    });
+    await expect(
+      submitAuth("login", form({ email: "1111", password: "1111" })),
+    ).rejects.toThrow("REDIRECT:/community");
+    expect(mocks.previewLogin).toHaveBeenCalledWith("1111", "1111", false);
+    expect(mocks.auth.signInWithPassword).not.toHaveBeenCalled();
+  });
+  it("잘못된 개발 계정 비밀번호로는 로그인하지 않는다", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    mocks.previewLogin.mockResolvedValue({
+      ok: false,
+      error: "아이디 또는 비밀번호가 올바르지 않습니다.",
+    });
+    expect(
+      (await submitAuth("login", form({ email: "1111", password: "wrong" })))
+        .ok,
+    ).not.toBe(true);
+  });
+  it("운영 환경에서는 개발 로그인을 호출하지 않는다", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    expect(
+      (await submitAuth("login", form({ email: "1111", password: "1111" }))).ok,
+    ).not.toBe(true);
+    expect(mocks.previewLogin).not.toHaveBeenCalled();
+  });
   it("does not send users to an unconfigured Kakao provider", async () => {
     vi.stubEnv("NEXT_PUBLIC_KAKAO_AUTH_ENABLED", "false");
     expect((await kakaoLogin()).message).toContain("설정");

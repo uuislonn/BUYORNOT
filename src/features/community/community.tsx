@@ -9,7 +9,6 @@ import { VoteButtons } from "./vote-buttons";
 import { ClipboardModal } from "./clipboard-modal";
 import { PostForm } from "./post-form";
 import { Modal } from "./modal";
-import { LoginModal } from "./login-modal";
 import { ShareButton } from "./share-button";
 import { PostOwnerMenu } from "./post-owner-menu";
 import styles from "./community.module.css";
@@ -21,7 +20,6 @@ export default function Community() {
   const [error, setError] = useState("");
   const [category, setCategory] = useState("전체");
   const [sort, setSort] = useState("latest");
-  const [login, setLogin] = useState(false);
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState<{ url: string; post?: FeedPost } | null>(
     null,
@@ -126,7 +124,7 @@ export default function Community() {
   }
   function write(url = "") {
     if (!viewer) {
-      setLogin(true);
+      router.push("/login");
       return;
     }
     setForm({ url });
@@ -166,7 +164,7 @@ export default function Community() {
         loggedIn={!!viewer}
         busy={busy}
         accountLabel={viewer ? "My Page" : undefined}
-        onAccount={() => (viewer ? router.push("/account") : setLogin(true))}
+        onAccount={() => router.push(viewer ? "/account" : "/login")}
       />
       <main className={styles.main}>
         <h1 className={styles.pageTitle}>살말 투표 커뮤니티</h1>
@@ -289,7 +287,7 @@ export default function Community() {
                   <VoteButtons
                     post={p}
                     loggedIn={!!viewer}
-                    login={() => setLogin(true)}
+                    login={() => router.push("/login")}
                     update={update}
                   />
                 </div>
@@ -303,15 +301,6 @@ export default function Community() {
           <span>© 2026 BUY OR NOT · COMMUNITY</span>
         </footer>
       </main>
-      {login && (
-        <LoginModal
-          close={() => setLogin(false)}
-          signedIn={async () => {
-            await refresh();
-            setLogin(false);
-          }}
-        />
-      )}
       {form && (
         <PostForm
           post={form.post}
@@ -363,7 +352,7 @@ export default function Community() {
             loggedIn={!!viewer}
             login={() => {
               setDetail(null);
-              setLogin(true);
+              router.push("/login");
             }}
             update={update}
           />
