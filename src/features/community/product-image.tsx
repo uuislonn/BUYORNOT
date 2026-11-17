@@ -12,7 +12,7 @@ export function ProductImage({
   eager: boolean;
 }) {
   const [failed, setFailed] = useState(false);
-  const [brandColor, setBrandColor] = useState<BrandColor>("#000");
+  const [brandColor, setBrandColor] = useState<BrandColor>("#fff");
   const brand = (
     <span
       className={styles.brandBadge}
@@ -40,13 +40,16 @@ export function ProductImage({
               try {
                 setBrandColor(readBrandColor(sample));
               } catch {
-                setBrandColor("#000");
+                setBrandColor("#fff");
               }
             };
-            sample.onerror = () => setBrandColor("#000");
+            sample.onerror = () => setBrandColor("#fff");
             sample.src = displayed.currentSrc || displayed.src;
           }}
-          onError={() => setFailed(true)}
+          onError={() => {
+            setBrandColor("#fff");
+            setFailed(true);
+          }}
         />
         {brand}
       </>
