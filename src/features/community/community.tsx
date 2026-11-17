@@ -12,6 +12,9 @@ import { Modal } from "./modal";
 import { ShareButton } from "./share-button";
 import { PostOwnerMenu } from "./post-owner-menu";
 import styles from "./community.module.css";
+import { CategoryFilter } from "./category-filter";
+import { SortMenu } from "./sort-menu";
+import { compareFeedPosts, parseFeedSort, type FeedSort } from "./feed-sort";
 export default function Community() {
   const router = useRouter();
   const [posts, setPosts] = useState<FeedPost[]>([]);
@@ -19,7 +22,7 @@ export default function Community() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [category, setCategory] = useState("전체");
-  const [sort, setSort] = useState("latest");
+  const [sort, setSort] = useState<FeedSort>("latest");
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState<{ url: string; post?: FeedPost } | null>(
     null,
@@ -67,7 +70,7 @@ export default function Community() {
           ? q.get("category")!
           : "전체",
       );
-      setSort(q.get("sort") === "popular" ? "popular" : "latest");
+      setSort(parseFeedSort(q.get("sort")));
       const request = ++detailRequest;
       const id = q.get("post");
       if (!id) {
@@ -79,8 +82,14 @@ export default function Community() {
       getPost(id)
         .then((result) => {
           if (!active || request !== detailRequest) return;
-          if (result.ok) setDetail(result.data);
-          else {
+          if (result.ok) {
+            setDetail(result.data);
+            setPosts((previous) =>
+              previous.map((post) =>
+                post.id === result.data.id ? result.data : post,
+              ),
+            );
+          } else {
             setDetail(null);
             setError(result.error);
           }
@@ -114,7 +123,7 @@ export default function Community() {
   }
   function filter(c: string, s: string) {
     setCategory(c);
-    setSort(s);
+    setSort(parseFeedSort(s));
     const url = new URL(location.href);
     if (c === "전체") url.searchParams.delete("category");
     else url.searchParams.set("category", c);
@@ -151,12 +160,22 @@ export default function Community() {
   }
   const visible = posts
     .filter((p) => category === "전체" || p.category === category)
-    .sort((a, b) =>
-      sort === "popular"
-        ? b.buy + b.not - (a.buy + a.not) ||
-          b.createdAt.localeCompare(a.createdAt)
-        : b.createdAt.localeCompare(a.createdAt),
-    );
+    .sort((a, b) => compareFeedPosts(a, b, sort));
+  async function openDetail(post: FeedPost) {
+    if (openingPost) return;
+    setOpeningPost(true);
+    try {
+      const result = await getPost(post.id);
+      if (result.ok) {
+        update(result.data);
+        setDetail(result.data);
+      } else setError(result.error);
+    } catch {
+      setError("게시글을 불러오지 못했습니다. 다시 시도해 주세요.");
+    } finally {
+      setOpeningPost(false);
+    }
+  }
   return (
     <div className={styles.app}>
       <SiteHeader
@@ -169,27 +188,17 @@ export default function Community() {
       <main className={styles.main}>
         <h1 className={styles.pageTitle}>살말 투표 커뮤니티</h1>
         <div className={styles.toolbar}>
-          <div className={styles.filters} role="group" aria-label="카테고리">
-            {categories.map((c) => (
-              <button
-                aria-pressed={category === c}
-                key={c}
-                onClick={() => filter(c, sort)}
-              >
-                {c === "전체" ? "ALL" : c}
-              </button>
-            ))}
-          </div>
-          <label className={styles.sort}>
-            정렬{" "}
-            <select
+          <CategoryFilter
+            categories={categories}
+            value={category}
+            onChange={(c) => filter(c, sort)}
+          />
+          <div className={styles.sort}>
+            <SortMenu
               value={sort}
-              onChange={(e) => filter(category, e.target.value)}
-            >
-              <option value="latest">최신순</option>
-              <option value="popular">인기순</option>
-            </select>
-          </label>
+              onChange={(value) => filter(category, value)}
+            />
+          </div>
         </div>
         <div className={styles.feedTop}>
           <p>
@@ -231,7 +240,7 @@ export default function Community() {
             {visible.map((p, i) => (
               <article className={styles.card} key={p.id}>
                 <div className={styles.cardHeader}>
-                  <button onClick={() => setDetail(p)}>
+                  <button disabled={openingPost} onClick={() => openDetail(p)}>
                     <span
                       className={styles.avatar}
                       style={{
@@ -253,7 +262,7 @@ export default function Community() {
                 >
                   <ProductImage post={p} eager={i < 4} />
                   <div className={styles.imageCaption}>
-                    <span>{p.product.name}</span>
+                    <span title={p.product.name}>{p.product.name}</span>
                     <span>
                       {p.product.price
                         ? `₩${p.product.price.toLocaleString("ko-KR")}`
@@ -265,7 +274,8 @@ export default function Community() {
                 <div className={styles.cardBody}>
                   <button
                     className={styles.concern}
-                    onClick={() => setDetail(p)}
+                    disabled={openingPost}
+                    onClick={() => openDetail(p)}
                   >
                     {p.concern}
                   </button>

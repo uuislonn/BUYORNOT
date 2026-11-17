@@ -29,6 +29,25 @@ const input: PostInput = {
 };
 let directory: string;
 let file: string;
+it("상세 열기마다 조회수를 기록하고 재시작·수정 후에도 보존한다", () => {
+  const store = new CommunityStore(new FileCommunityPersistence(file));
+  const post = store.save(input, owner, undefined, product);
+  expect(post.views).toBe(0);
+  store.list(null);
+  store.detail(post.id, null);
+  expect(store.open(post.id, null).views).toBe(1);
+  expect(store.open(post.id, null).views).toBe(2);
+  const restarted = new CommunityStore(new FileCommunityPersistence(file));
+  expect(restarted.detail(post.id, owner).views).toBe(2);
+  expect(restarted.save(input, owner, post.id, product).views).toBe(2);
+});
+it("비공개 글을 열 수 없는 사용자의 조회수는 기록하지 않는다", () => {
+  const store = new CommunityStore();
+  const post = store.save(input, owner, undefined, product);
+  store.posts.get(post.id)!.visibility = "LINK_ONLY";
+  expect(() => store.open(post.id, null)).toThrow();
+  expect(store.detail(post.id, owner).views).toBe(0);
+});
 beforeEach(() => {
   directory = mkdtempSync(join(tmpdir(), "buyornot-persistence-"));
   file = join(directory, "community.json");

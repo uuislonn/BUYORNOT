@@ -38,6 +38,8 @@ export interface Post {
   deletedAt: string | null;
   buy: number;
   not: number;
+  /** Legacy posts without this field start at zero. */
+  views?: number;
 }
 export interface FeedPost extends Post {
   myVote: Choice | null;
