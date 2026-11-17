@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { FeedPost } from "./types";
 import styles from "./community.module.css";
-import { readBrandColor, type BrandColor } from "./brand-color";
+import { brandSampleUrl, readBrandColor, type BrandColor } from "./brand-color";
 export function ProductImage({
   post,
   eager,
@@ -44,7 +44,7 @@ export function ProductImage({
               }
             };
             sample.onerror = () => setBrandColor("#fff");
-            sample.src = displayed.currentSrc || displayed.src;
+            sample.src = brandSampleUrl(displayed.currentSrc || displayed.src);
           }}
           onError={() => {
             setBrandColor("#fff");
