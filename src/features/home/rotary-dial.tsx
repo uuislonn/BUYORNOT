@@ -204,6 +204,9 @@ export function RotaryDial({ loggedIn }: { loggedIn: boolean }) {
           </div>
         </div>
       </div>
+      <span id="dial-help" className={styles.screenReaderOnly}>
+        드래그하거나 좌우 방향키로 돌릴 수 있으며, 놓으면 제자리로 돌아옵니다.
+      </span>
       <div className={styles.controls}>
         <button
           type="button"
@@ -212,9 +215,6 @@ export function RotaryDial({ loggedIn }: { loggedIn: boolean }) {
         >
           ↶
         </button>
-        <p id="dial-help">
-          돌리고 놓으면 돌아와요<span> · 방향키로도 돌릴 수 있어요</span>
-        </p>
         <button
           type="button"
           aria-label="다이얼 오른쪽으로 돌리기"
