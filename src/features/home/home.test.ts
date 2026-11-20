@@ -53,6 +53,13 @@ describe("홈과 커뮤니티 연결", () => {
       ),
     );
   });
+  it("다이얼은 확대 시 추가 손실 압축 없이 원본 PNG를 사용한다", () => {
+    const html = renderToStaticMarkup(createElement(Home));
+    for (const file of ["original.png", "metal-repair.png", "stop.png"]) {
+      expect(html).toContain(`src="/home/dial/${file}"`);
+      expect(html).not.toContain(encodeURIComponent(`/home/dial/${file}`));
+    }
+  });
   it("체크무늬 대신 교체용 이미지 컨테이너와 시안의 세 기능을 제공한다", () => {
     const html = renderToStaticMarkup(createElement(Home));
     expect(html).not.toContain("placeholder.png");

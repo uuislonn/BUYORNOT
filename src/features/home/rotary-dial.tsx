@@ -120,9 +120,9 @@ export function RotaryDial({ loggedIn }: { loggedIn: boolean }) {
       >
         <div className={styles.rotor} aria-hidden="true">
           <Image
-            width={974}
-            height={974}
-            sizes="(max-width: 767px) 130.7vw, 81.4vw"
+            width={1080}
+            height={1080}
+            unoptimized
             className={styles.phone}
             src="/home/dial/original.png"
             alt=""
@@ -132,9 +132,9 @@ export function RotaryDial({ loggedIn }: { loggedIn: boolean }) {
           <Image
             className={styles.barRepair}
             src="/home/dial/metal-repair.png"
-            width={1329}
-            height={1329}
-            sizes="(max-width: 767px) 130.7vw, 81.4vw"
+            width={1254}
+            height={1254}
+            unoptimized
             alt=""
             draggable={false}
           />
@@ -184,6 +184,7 @@ export function RotaryDial({ loggedIn }: { loggedIn: boolean }) {
         <Image
           className={styles.stop}
           src="/home/dial/stop.png"
+          unoptimized
           width={291}
           height={274}
           alt=""
