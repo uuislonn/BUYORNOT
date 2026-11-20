@@ -7,7 +7,6 @@ export const dialProducts = [
     source: [382, 148, 145, 187],
     target: [407, 150, 96, 125],
     center: [458, 206, 75, 78],
-    path: "M407 153 Q470 136 511 174 L525 207 514 248 489 274 477 333 467 333 479 267 430 249 407 331 396 331 408 244 382 232 397 209Z",
   },
   {
     key: "hoodie",
@@ -20,8 +19,7 @@ export const dialProducts = [
     key: "jacket",
     source: [762, 220, 160, 136],
     target: [781, 229, 111, 98],
-    center: [841, 285, 70, 74],
-    path: "M799 234 824 220 853 226 863 239 889 245 904 282 922 346 897 354 881 319 881 349 787 350 788 316 779 354 762 348 777 271Z",
+    center: [841, 285, 78, 78],
   },
   {
     key: "foundation",
@@ -32,7 +30,7 @@ export const dialProducts = [
   {
     key: "shoe",
     source: [134, 460, 130, 70],
-    target: [138, 473, 125, 46],
+    target: [138, 461, 125, 70],
     center: [202, 497, 74, 76],
   },
   {
@@ -52,7 +50,6 @@ export const dialProducts = [
     source: [436, 827, 143, 165],
     target: [461, 887, 99, 115],
     center: [502, 958, 75, 76],
-    path: "M437 969 443 945 454 927 Q472 810 504 830 Q531 836 560 928 L573 942 579 976 569 990 447 992Z M461 928 552 928 Q527 849 504 841 Q480 824 461 928Z",
   },
   {
     key: "lipstick",
@@ -61,6 +58,25 @@ export const dialProducts = [
     center: [705, 950, 73, 76],
   },
 ] as const;
+
+// Use supplied PNG alpha directly, with only transparent canvas margins excluded.
+const cutouts: Partial<
+  Record<
+    (typeof dialProducts)[number]["key"],
+    {
+      size: readonly [number, number];
+      viewBox: string;
+    }
+  >
+> = {
+  foundation: { size: [740, 705], viewBox: "225 20 286 685" },
+  blush: { size: [540, 549], viewBox: "44 31 454 492" },
+  lipstick: { size: [571, 853], viewBox: "146 101 327 699" },
+  bag: { size: [726, 814], viewBox: "63 34 626 736" },
+  shoe: { size: [715, 433], viewBox: "50 68 572 313" },
+  hat: { size: [900, 929], viewBox: "196 96 648 833" },
+  jacket: { size: [793, 774], viewBox: "55 83 675 604" },
+};
 
 export function DialArtwork({ className }: { className: string }) {
   const id = useId().replace(/:/g, "");
@@ -97,6 +113,7 @@ export function DialArtwork({ className }: { className: string }) {
           ))}
         </mask>
         {dialProducts.map((product) => {
+          if (cutouts[product.key]) return null;
           const [x, y, width, height] = product.source;
           return (
             <clipPath key={product.key} id={`${id}-${product.key}`}>
@@ -125,6 +142,7 @@ export function DialArtwork({ className }: { className: string }) {
       />
       {dialProducts.map((product) => {
         const [x, y, w, h] = product.target;
+        const cutout = cutouts[product.key];
         const [cx, cy, rx, ry] = product.center;
         return (
           <g key={product.key} clipPath={`url(#${id}-pocket-${product.key})`}>
@@ -134,17 +152,25 @@ export function DialArtwork({ className }: { className: string }) {
               y={y}
               width={w}
               height={h}
-              viewBox={product.source.join(" ")}
-              preserveAspectRatio="none"
+              viewBox={cutout?.viewBox ?? product.source.join(" ")}
+              preserveAspectRatio={cutout ? "xMidYMid meet" : "none"}
               overflow="hidden"
             >
-              <image
-                href="/home/dial/curated-dial-highres.png"
-                width="1224"
-                height="1285"
-                preserveAspectRatio="none"
-                clipPath={`url(#${id}-${product.key})`}
-              />
+              {cutout ? (
+                <image
+                  href={`/home/dial/cutouts/${product.key}.png`}
+                  width={cutout.size[0]}
+                  height={cutout.size[1]}
+                />
+              ) : (
+                <image
+                  href="/home/dial/curated-dial-highres.png"
+                  width="1224"
+                  height="1285"
+                  preserveAspectRatio="none"
+                  clipPath={`url(#${id}-${product.key})`}
+                />
+              )}
             </svg>
           </g>
         );

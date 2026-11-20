@@ -54,6 +54,19 @@ describe("홈과 커뮤니티 연결", () => {
       ),
     );
   });
+  it("제공한 7개 투명 상품 PNG를 수작업 윤곽 대신 직접 표시한다", () => {
+    const html = renderToStaticMarkup(createElement(Home));
+    for (const product of [
+      "foundation",
+      "blush",
+      "lipstick",
+      "bag",
+      "shoe",
+      "hat",
+      "jacket",
+    ])
+      expect(html).toContain(`href="/home/dial/cutouts/${product}.png"`);
+  });
   it("고해상도 원본을 축소 저장하지 않고 유지한다", () => {
     const png = readFileSync(
       new URL(
