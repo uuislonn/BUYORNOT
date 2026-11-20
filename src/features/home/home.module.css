@@ -108,8 +108,9 @@
 .headingRule {
   display: block;
   height: 1px;
-  flex: 1;
-  overflow: hidden;
+  flex: 1 0 40px;
+  max-width: 127px;
+  background: #888;
   min-width: 40px;
 }
 .storyCopy p {

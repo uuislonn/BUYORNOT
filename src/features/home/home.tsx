@@ -108,14 +108,7 @@ export default function Home() {
           <div className={styles.storyCopy} data-reveal>
             <h2 id="story-title">
               혼자 고민하던 당신에게
-              <span className={styles.headingRule} aria-hidden="true">
-                <img
-                  src="/home/figma/heading-rule.svg"
-                  alt=""
-                  width={127}
-                  height={1}
-                />
-              </span>
+              <span className={styles.headingRule} aria-hidden="true" />
             </h2>
             <p>
               마음에 드는 것을 발견하는 건 설레지만,
