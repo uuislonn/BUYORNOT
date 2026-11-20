@@ -4,6 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   angleDelta,
+  introAngle,
+  INTRO_DURATION,
   returnAngle,
   returnDuration,
   pointerAngle,
@@ -50,9 +52,10 @@ export function RotaryDial({ loggedIn }: { loggedIn: boolean }) {
     else {
       const start = performance.now();
       function intro(now: number) {
-        const t = Math.min(1, (now - start) / 1000);
-        paint(18 * Math.sin(Math.PI * t) * (1 - t));
-        if (t < 1) frame.current = requestAnimationFrame(intro);
+        const elapsed = now - start;
+        paint(introAngle(elapsed));
+        if (elapsed < INTRO_DURATION)
+          frame.current = requestAnimationFrame(intro);
       }
       frame.current = requestAnimationFrame(intro);
     }

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   angleDelta,
+  introAngle,
+  INTRO_DURATION,
   returnAngle,
   returnDuration,
   pointerAngle,
@@ -18,8 +20,9 @@ describe("다이얼 조작 물리", () => {
     expect(pointerAngle(100, 0, 100, 100)).toBe(-90);
   });
   it("회전 범위를 제한해 여러 바퀴를 감아도 과도한 복귀가 발생하지 않는다", () => {
-    expect(returnAngle(260, 40)).toBe(270);
-    expect(returnAngle(-260, -40)).toBe(-270);
+    expect(returnAngle(140, 40)).toBe(150);
+    expect(returnAngle(0, -40)).toBe(-5);
+    expect(returnAngle(-5, -40)).toBe(-5);
     expect(returnAngle(45, -20)).toBe(25);
   });
   it("복귀 시간은 회전 거리에 비례하며 짧거나 긴 조작에서도 제한된다", () => {
@@ -27,5 +30,27 @@ describe("다이얼 조작 물리", () => {
     expect(returnDuration(180)).toBe(900);
     expect(returnDuration(-180)).toBe(900);
     expect(returnDuration(1000)).toBe(1400);
+  });
+  it("진입 회전은 립스틱을 파운데이션 자리로 옮긴 뒤 정확히 복귀한다", () => {
+    expect(introAngle(0)).toBe(0);
+    expect(introAngle(800)).toBe(150);
+    expect(introAngle(900)).toBe(150);
+    expect(introAngle(INTRO_DURATION)).toBe(0);
+    expect(introAngle(10000)).toBe(0);
+    const angle = (introAngle(800) * Math.PI) / 180;
+    const x = 60.2 - 50;
+    const y = 81.26 - 50;
+    expect(50 + x * Math.cos(angle) - y * Math.sin(angle)).toBeCloseTo(
+      25.54,
+      1,
+    );
+    expect(50 + x * Math.sin(angle) + y * Math.cos(angle)).toBeCloseTo(
+      28.03,
+      1,
+    );
+    for (let t = 0; t <= INTRO_DURATION; t += 10) {
+      expect(introAngle(t)).toBeGreaterThanOrEqual(0);
+      expect(introAngle(t)).toBeLessThanOrEqual(150);
+    }
   });
 });
