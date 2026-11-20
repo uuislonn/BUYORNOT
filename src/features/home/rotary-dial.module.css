@@ -130,38 +130,9 @@
 .centerActions a:active {
   transform: scale(0.97);
 }
-.centerActions a:focus-visible,
-.controls button:focus-visible {
+.centerActions a:focus-visible {
   outline: 3px solid #0100fe;
   outline-offset: 4px;
-}
-.controls {
-  position: absolute;
-  left: 24px;
-  bottom: 18px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  z-index: 3;
-}
-.controls button {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid #ddd;
-  background: #ffffffd9;
-  color: #111;
-  border-radius: 50%;
-  font-size: 20px;
-  cursor: pointer;
-  transition:
-    background 0.2s,
-    transform 0.2s;
-}
-.controls button:hover {
-  background: #eee;
-  transform: scale(1.08);
 }
 @media (max-width: 767px) {
   .centerActions {
@@ -173,17 +144,12 @@
     padding: 7px 15px;
     font-size: clamp(10px, 2.3vw, 14px);
   }
-  .controls {
-    left: 12px;
-    bottom: 12px;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .rotor {
     will-change: auto;
   }
-  .centerActions a,
-  .controls button {
+  .centerActions a {
     transition: none;
   }
 }
