@@ -31,25 +31,27 @@
   height: auto;
   filter: drop-shadow(0 12px 18px #00000015);
 }
-.pocket {
+.barRepair {
   position: absolute;
-  width: 14.6%;
-  aspect-ratio: 1;
-  transform: translate(-50%, -50%) rotate(calc(-1 * var(--dial-angle)));
-  border-radius: 50%;
-  overflow: hidden;
-  isolation: isolate;
-  display: grid;
-  place-items: center;
-}
-.pocket img {
-  position: absolute;
-  inset: 8%;
-  width: 84%;
-  height: 84%;
-  object-fit: contain;
-  transform: none;
-  filter: drop-shadow(0 4px 3px #0002);
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* Cover only the baked-in stop; all product pixels remain the original. */
+  clip-path: polygon(
+    73% 39%,
+    79% 36.5%,
+    84% 33.5%,
+    88% 28%,
+    89% 26%,
+    91% 26%,
+    94% 30%,
+    95% 34%,
+    94% 36%,
+    90% 39%,
+    84% 41%,
+    77% 42%,
+    73% 42%
+  );
 }
 .hitArea {
   position: absolute;
@@ -205,10 +207,10 @@
 
 .stop {
   position: absolute;
-  width: 23.5%;
+  width: 22.2%;
   height: auto;
-  left: 73.5%;
-  top: 27%;
+  left: 73.1%;
+  top: 24.2%;
   pointer-events: none;
   z-index: 1;
   user-select: none;

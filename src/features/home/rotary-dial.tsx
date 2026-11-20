@@ -10,19 +10,6 @@ import {
 } from "./dial-physics";
 import styles from "./rotary-dial.module.css";
 
-// Centers measured against the supplied 1329 × 1329 empty plate.
-const slots = [
-  [39.13, 17.68, 3],
-  [56.13, 16.78, 1],
-  [71.03, 24.6, 9],
-  [24.76, 26.86, 2],
-  [16.7, 42.74, 7],
-  [17.98, 60.42, 4],
-  [29.27, 75.24, 6],
-  [43.57, 82.24, 8],
-  [60.2, 81.26, 5],
-] as const;
-
 export function RotaryDial({ loggedIn }: { loggedIn: boolean }) {
   const root = useRef<HTMLDivElement>(null);
   const frame = useRef(0);
@@ -134,27 +121,20 @@ export function RotaryDial({ loggedIn }: { loggedIn: boolean }) {
             height={974}
             sizes="(max-width: 767px) 122vw, 76vw"
             className={styles.phone}
-            src="/home/dial/plate.png"
+            src="/home/dial/original.png"
             alt=""
             draggable={false}
             fetchPriority="high"
           />
-          {slots.map(([left, top, product], index) => (
-            <div
-              key={index}
-              className={styles.pocket}
-              style={{ left: `${left}%`, top: `${top}%` }}
-            >
-              <Image
-                width={144}
-                height={144}
-                sizes="(max-width: 767px) 18vw, 11vw"
-                src={`/home/dial/product-${product}.png`}
-                alt=""
-                draggable={false}
-              />
-            </div>
-          ))}
+          <Image
+            className={styles.barRepair}
+            src="/home/dial/plate.png"
+            width={1329}
+            height={1329}
+            sizes="(max-width: 767px) 122vw, 76vw"
+            alt=""
+            draggable={false}
+          />
         </div>
         <svg
           className={styles.hitArea}
