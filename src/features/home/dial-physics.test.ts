@@ -26,18 +26,18 @@ describe("다이얼 조작 물리", () => {
     expect(returnAngle(45, -20)).toBe(25);
   });
   it("복귀 시간은 회전 거리에 비례하며 짧거나 긴 조작에서도 제한된다", () => {
-    expect(returnDuration(0)).toBe(360);
-    expect(returnDuration(180)).toBe(720);
-    expect(returnDuration(-180)).toBe(720);
-    expect(returnDuration(1000)).toBe(1120);
+    expect(returnDuration(0)).toBe(270);
+    expect(returnDuration(180)).toBe(540);
+    expect(returnDuration(-180)).toBe(540);
+    expect(returnDuration(1000)).toBe(840);
   });
   it("진입 회전은 립스틱을 파운데이션 자리로 옮긴 뒤 정확히 복귀한다", () => {
     expect(introAngle(0)).toBe(0);
-    expect(introAngle(640)).toBe(150);
-    expect(introAngle(720)).toBe(150);
+    expect(introAngle(480)).toBe(150);
+    expect(introAngle(540)).toBe(150);
     expect(introAngle(INTRO_DURATION)).toBe(0);
     expect(introAngle(10000)).toBe(0);
-    const angle = (introAngle(640) * Math.PI) / 180;
+    const angle = (introAngle(480) * Math.PI) / 180;
     const x = 60.2 - 50;
     const y = 81.26 - 50;
     expect(50 + x * Math.cos(angle) - y * Math.sin(angle)).toBeCloseTo(
