@@ -10,16 +10,17 @@ import {
 } from "./dial-physics";
 import styles from "./rotary-dial.module.css";
 
+// Centers measured against the supplied 1329 × 1329 empty plate.
 const slots = [
-  [39, 17.5, 3],
-  [56, 16.5, 1],
-  [71, 25, 9],
-  [24, 27, 2],
-  [16.5, 42.7, 7],
-  [18, 60, 4],
-  [29, 75, 6],
-  [43.5, 82, 8],
-  [60, 81, 5],
+  [39.13, 17.68, 3],
+  [56.13, 16.78, 1],
+  [71.03, 24.6, 9],
+  [24.76, 26.86, 2],
+  [16.7, 42.74, 7],
+  [17.98, 60.42, 4],
+  [29.27, 75.24, 6],
+  [43.57, 82.24, 8],
+  [60.2, 81.26, 5],
 ] as const;
 
 export function RotaryDial({ loggedIn }: { loggedIn: boolean }) {

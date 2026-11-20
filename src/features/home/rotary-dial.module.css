@@ -33,18 +33,20 @@
 }
 .pocket {
   position: absolute;
-  width: 12.7%;
+  width: 14.6%;
   aspect-ratio: 1;
   transform: translate(-50%, -50%) rotate(calc(-1 * var(--dial-angle)));
   border-radius: 50%;
+  overflow: hidden;
+  isolation: isolate;
   display: grid;
   place-items: center;
 }
 .pocket img {
   position: absolute;
-  inset: 7%;
-  width: 86%;
-  height: 86%;
+  inset: 8%;
+  width: 84%;
+  height: 84%;
   object-fit: contain;
   transform: none;
   filter: drop-shadow(0 4px 3px #0002);
