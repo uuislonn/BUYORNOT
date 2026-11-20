@@ -120,23 +120,14 @@ export function RotaryDial({ loggedIn }: { loggedIn: boolean }) {
       >
         <div className={styles.rotor} aria-hidden="true">
           <Image
-            width={1254}
-            height={1254}
+            width={1224}
+            height={1285}
             unoptimized
             className={styles.phone}
-            src="/home/dial/original-hd.png"
+            src="/home/dial/curated-dial.png"
             alt=""
             draggable={false}
             fetchPriority="high"
-          />
-          <Image
-            className={styles.barRepair}
-            src="/home/dial/metal-repair.png"
-            width={1254}
-            height={1254}
-            unoptimized
-            alt=""
-            draggable={false}
           />
         </div>
         <svg

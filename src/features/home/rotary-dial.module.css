@@ -30,19 +30,6 @@
   pointer-events: none;
   clip-path: ellipse(44.4% 45% at 50.2% 50.5%);
 }
-.rotor::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50.3%;
-  width: 40%;
-  height: 43%;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  background: #fff;
-  z-index: 1;
-  pointer-events: none;
-}
 .rotor::after {
   content: "";
   position: absolute;
@@ -59,18 +46,12 @@
   pointer-events: none;
 }
 .phone {
-  display: block;
-  width: 100%;
-  height: auto;
-  mask-image: url("/home/dial/remove-stop-mask.svg");
-  mask-size: 100% 100%;
-}
-.barRepair {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -1;
+  display: block;
+  width: 104.8%;
+  height: auto;
+  left: 0.5%;
+  top: 0.7%;
 }
 .hitArea {
   position: absolute;
