@@ -100,8 +100,10 @@
   text-decoration: none;
   font-size: clamp(11px, 1vw, 16px);
   font-weight: 500;
-  padding: 9px 12px;
-  border-radius: 10px;
+  padding: 9px 20px;
+  border-radius: 999px;
+  line-height: 1.25;
+  white-space: nowrap;
   transition:
     transform 0.2s,
     background 0.2s;
@@ -109,13 +111,13 @@
 }
 .centerActions .primary {
   color: #fff;
-  background: #111;
-  border: 2px solid #111;
+  background: #000;
+  border: 1px solid #000;
 }
 .centerActions .secondary {
   color: #111;
-  border: 2px solid #0003;
-  background: #dedfce88;
+  border: 1px solid #111;
+  background: transparent;
 }
 .centerActions a:hover {
   transform: translateY(-3px);
@@ -177,8 +179,7 @@
     flex-direction: column;
   }
   .centerActions a {
-    padding: 7px 9px;
-    border-radius: 9px;
+    padding: 7px 15px;
     font-size: clamp(10px, 2.3vw, 14px);
   }
   .controls {
