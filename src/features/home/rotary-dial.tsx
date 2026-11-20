@@ -128,7 +128,7 @@ export function RotaryDial({ loggedIn }: { loggedIn: boolean }) {
           />
           <Image
             className={styles.barRepair}
-            src="/home/dial/plate.png"
+            src="/home/dial/metal-repair.png"
             width={1329}
             height={1329}
             sizes="(max-width: 767px) 122vw, 76vw"
