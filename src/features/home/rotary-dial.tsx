@@ -2,32 +2,34 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { angleDelta, inertiaStep, pointerAngle } from "./dial-physics";
+import {
+  angleDelta,
+  returnAngle,
+  returnDuration,
+  pointerAngle,
+} from "./dial-physics";
 import styles from "./rotary-dial.module.css";
 
 const slots = [
-  [80.2, 25.2, "knit"],
-  [66.4, 14.8, "cap"],
-  [50.1, 11, "shoe"],
-  [33.4, 15, "knit"],
-  [18.8, 25.2, "bag"],
-  [10.2, 40, "cap"],
-  [10, 56.8, "shoe"],
-  [18.4, 73, "bag"],
-  [32, 85.5, "knit"],
-  [49, 90.5, "cap"],
+  [39, 17.5, 3],
+  [56, 16.5, 1],
+  [71, 25, 9],
+  [24, 27, 2],
+  [16.5, 42.7, 7],
+  [18, 60, 4],
+  [29, 75, 6],
+  [43.5, 82, 8],
+  [60, 81, 5],
 ] as const;
 
 export function RotaryDial({ loggedIn }: { loggedIn: boolean }) {
   const root = useRef<HTMLDivElement>(null);
   const frame = useRef(0);
-  const rotation = useRef(-12);
+  const rotation = useRef(0);
   const reduced = useRef(false);
   const drag = useRef<{
     id: number;
     previous: number;
-    time: number;
-    velocity: number;
   } | null>(null);
   const [dragging, setDragging] = useState(false);
   function paint(angle: number) {
@@ -37,10 +39,10 @@ export function RotaryDial({ loggedIn }: { loggedIn: boolean }) {
   function stop() {
     cancelAnimationFrame(frame.current);
   }
-  function turnTo(target: number, duration = 300) {
+  function turnTo(target: number, duration = 300, returnHome = false) {
     stop();
     if (reduced.current) {
-      paint(target);
+      paint(returnHome ? 0 : target);
       return;
     }
     const from = rotation.current;
@@ -49,6 +51,7 @@ export function RotaryDial({ loggedIn }: { loggedIn: boolean }) {
       const t = Math.min(1, (now - start) / duration);
       paint(from + (target - from) * (1 - Math.pow(1 - t, 3)));
       if (t < 1) frame.current = requestAnimationFrame(tick);
+      else if (returnHome) turnTo(0, returnDuration(target));
     }
     frame.current = requestAnimationFrame(tick);
   }
@@ -58,16 +61,19 @@ export function RotaryDial({ loggedIn }: { loggedIn: boolean }) {
     if (media.matches) paint(0);
     else {
       const start = performance.now();
-      const intro = (now: number) => {
-        const t = Math.min(1, (now - start) / 1100);
-        paint(-12 * Math.pow(1 - t, 3));
+      function intro(now: number) {
+        const t = Math.min(1, (now - start) / 1000);
+        paint(18 * Math.sin(Math.PI * t) * (1 - t));
         if (t < 1) frame.current = requestAnimationFrame(intro);
-      };
+      }
       frame.current = requestAnimationFrame(intro);
     }
     const changed = () => {
       reduced.current = media.matches;
-      if (media.matches) cancelAnimationFrame(frame.current);
+      if (media.matches) {
+        cancelAnimationFrame(frame.current);
+        paint(0);
+      }
     };
     media.addEventListener("change", changed);
     return () => {
@@ -84,30 +90,16 @@ export function RotaryDial({ loggedIn }: { loggedIn: boolean }) {
       bounds.top + bounds.height / 2,
     );
   }
-  function release(
-    event: React.PointerEvent<SVGCircleElement>,
-    cancelled = false,
-  ) {
+  function release(event: React.PointerEvent<SVGCircleElement>) {
     const held = drag.current;
     if (!held || event.pointerId !== held.id) return;
     drag.current = null;
     setDragging(false);
     if (event.currentTarget.hasPointerCapture(event.pointerId))
       event.currentTarget.releasePointerCapture(event.pointerId);
-    if (cancelled || reduced.current || event.timeStamp - held.time > 100)
-      return;
-    let velocity = held.velocity;
-    let last = performance.now();
-    function tick(now: number) {
-      const step = inertiaStep(velocity, now - last);
-      paint(rotation.current + step.delta);
-      velocity = step.velocity;
-      last = now;
-      if (Math.abs(velocity) > 0.006)
-        frame.current = requestAnimationFrame(tick);
-    }
-    frame.current = requestAnimationFrame(tick);
+    turnTo(0, returnDuration(rotation.current));
   }
+
   return (
     <div className={styles.stage}>
       <div
@@ -128,16 +120,20 @@ export function RotaryDial({ loggedIn }: { loggedIn: boolean }) {
                 : 0;
           if (!step && event.key !== "Home") return;
           event.preventDefault();
-          turnTo(event.key === "Home" ? 0 : rotation.current + step);
+          turnTo(
+            event.key === "Home" ? 0 : returnAngle(rotation.current, step),
+            250,
+            event.key !== "Home",
+          );
         }}
       >
         <div className={styles.rotor} aria-hidden="true">
           <Image
             width={974}
-            height={1004}
+            height={974}
             sizes="(max-width: 767px) 122vw, 76vw"
             className={styles.phone}
-            src="/home/figma/phone.png"
+            src="/home/dial/plate.png"
             alt=""
             draggable={false}
             fetchPriority="high"
@@ -148,16 +144,11 @@ export function RotaryDial({ loggedIn }: { loggedIn: boolean }) {
               className={styles.pocket}
               style={{ left: `${left}%`, top: `${top}%` }}
             >
-              <span className={styles.pocketRim} />
               <Image
                 width={144}
                 height={144}
                 sizes="(max-width: 767px) 18vw, 11vw"
-                src={
-                  product === "bag"
-                    ? "/home/figma/bag.png"
-                    : `/home/products/${product}.png`
-                }
+                src={`/home/dial/product-${product}.png`}
                 alt=""
                 draggable={false}
               />
@@ -188,8 +179,6 @@ export function RotaryDial({ loggedIn }: { loggedIn: boolean }) {
               drag.current = {
                 id: event.pointerId,
                 previous: currentAngle(event),
-                time: event.timeStamp,
-                velocity: 0,
               };
               setDragging(true);
             }}
@@ -198,22 +187,25 @@ export function RotaryDial({ loggedIn }: { loggedIn: boolean }) {
               if (!held || event.pointerId !== held.id) return;
               const next = currentAngle(event);
               const delta = angleDelta(next, held.previous);
-              const dt = Math.max(8, event.timeStamp - held.time);
-              held.velocity = Math.max(
-                -0.55,
-                Math.min(0.55, held.velocity * 0.35 + (delta / dt) * 0.65),
-              );
               held.previous = next;
-              held.time = event.timeStamp;
-              paint(rotation.current + delta);
+              paint(returnAngle(rotation.current, delta));
             }}
             onPointerUp={(event) => release(event)}
-            onPointerCancel={(event) => release(event, true)}
+            onPointerCancel={(event) => release(event)}
             onLostPointerCapture={(event) => {
-              if (drag.current?.id === event.pointerId) release(event, true);
+              if (drag.current?.id === event.pointerId) release(event);
             }}
           />
         </svg>
+        <Image
+          className={styles.stop}
+          src="/home/dial/stop.png"
+          width={291}
+          height={274}
+          alt=""
+          draggable={false}
+          aria-hidden="true"
+        />
         <div className={styles.center}>
           <div className={styles.centerActions}>
             <Link
@@ -232,17 +224,17 @@ export function RotaryDial({ loggedIn }: { loggedIn: boolean }) {
         <button
           type="button"
           aria-label="다이얼 왼쪽으로 돌리기"
-          onClick={() => turnTo(rotation.current - 30)}
+          onClick={() => turnTo(returnAngle(rotation.current, -45), 250, true)}
         >
           ↶
         </button>
         <p id="dial-help">
-          드래그해서 돌려보세요<span> · 방향키로도 돌릴 수 있어요</span>
+          돌리고 놓으면 돌아와요<span> · 방향키로도 돌릴 수 있어요</span>
         </p>
         <button
           type="button"
           aria-label="다이얼 오른쪽으로 돌리기"
-          onClick={() => turnTo(rotation.current + 30)}
+          onClick={() => turnTo(returnAngle(rotation.current, 45), 250, true)}
         >
           ↷
         </button>

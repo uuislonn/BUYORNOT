@@ -5,7 +5,7 @@
   overflow: hidden;
 }
 .dial {
-  --dial-angle: -12deg;
+  --dial-angle: 0deg;
   position: relative;
   width: min(974px, 76vw);
   aspect-ratio: 1;
@@ -33,37 +33,20 @@
 }
 .pocket {
   position: absolute;
-  width: 14.8%;
+  width: 12.7%;
   aspect-ratio: 1;
   transform: translate(-50%, -50%) rotate(calc(-1 * var(--dial-angle)));
   border-radius: 50%;
-  background: radial-gradient(
-    ellipse at 35% 20%,
-    #f9f9f9,
-    #d8d8d9 70%,
-    #b5b6b8
-  );
-  box-shadow:
-    inset 0 3px 7px #0005,
-    0 0 0 1px #fafafa90;
   display: grid;
   place-items: center;
 }
-.pocketRim {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 2px solid #fff8;
-  border-top-color: #fff;
-  border-bottom-color: #7778;
-  transform: rotate(var(--dial-angle));
-}
 .pocket img {
-  position: relative;
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 7%;
+  width: 86%;
+  height: 86%;
   object-fit: contain;
-  transform: scale(1.16);
+  transform: none;
   filter: drop-shadow(0 4px 3px #0002);
 }
 .hitArea {
@@ -83,14 +66,14 @@
 }
 .center {
   position: absolute;
-  width: 35%;
+  width: 43%;
   aspect-ratio: 1;
-  top: 47.8%;
-  left: 50.8%;
+  top: 49.5%;
+  left: 49.5%;
   transform: translate(-50%, -50%);
   border-radius: 50%;
-  background: radial-gradient(ellipse at 35% 25%, #d1d2bf, #b9baa8 75%);
-  box-shadow: inset 0 0 18px #686b5b50;
+  background: transparent;
+
   display: grid;
   place-items: center;
   z-index: 2;
@@ -207,9 +190,6 @@
   .controls p span {
     display: none;
   }
-  .pocketRim {
-    border-width: 1px;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .rotor {
@@ -219,4 +199,15 @@
   .controls button {
     transition: none;
   }
+}
+
+.stop {
+  position: absolute;
+  width: 23.5%;
+  height: auto;
+  left: 73.5%;
+  top: 27%;
+  pointer-events: none;
+  z-index: 1;
+  user-select: none;
 }

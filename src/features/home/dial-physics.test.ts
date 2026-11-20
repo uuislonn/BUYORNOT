@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { angleDelta, inertiaStep, pointerAngle } from "./dial-physics";
+import {
+  angleDelta,
+  returnAngle,
+  returnDuration,
+  pointerAngle,
+} from "./dial-physics";
 
 describe("다이얼 조작 물리", () => {
   it("원의 경계를 지나도 회전 방향이 뒤집히거나 점프하지 않는다", () => {
@@ -12,23 +17,15 @@ describe("다이얼 조작 물리", () => {
     expect(pointerAngle(100, 200, 100, 100)).toBe(90);
     expect(pointerAngle(100, 0, 100, 100)).toBe(-90);
   });
-  it("관성은 양방향에서 부드럽게 감속하고 결국 멈춘다", () => {
-    for (const initial of [-0.5, 0.5]) {
-      let velocity = initial;
-      let total = 0;
-      for (let i = 0; i < 120; i++) {
-        const step = inertiaStep(velocity, 16);
-        expect(Math.abs(step.velocity)).toBeLessThan(Math.abs(velocity));
-        total += step.delta;
-        velocity = step.velocity;
-      }
-      expect(Math.abs(velocity)).toBeLessThan(0.006);
-      expect(Math.sign(total)).toBe(Math.sign(initial));
-      expect(Math.abs(total)).toBeLessThan(100);
-    }
+  it("회전 범위를 제한해 여러 바퀴를 감아도 과도한 복귀가 발생하지 않는다", () => {
+    expect(returnAngle(260, 40)).toBe(270);
+    expect(returnAngle(-260, -40)).toBe(-270);
+    expect(returnAngle(45, -20)).toBe(25);
   });
-  it("프레임 지연이나 정지 속도로 급격하게 회전하지 않는다", () => {
-    expect(inertiaStep(0, 16)).toEqual({ delta: 0, velocity: 0 });
-    expect(inertiaStep(0.5, 5000)).toEqual(inertiaStep(0.5, 40));
+  it("복귀 시간은 회전 거리에 비례하며 짧거나 긴 조작에서도 제한된다", () => {
+    expect(returnDuration(0)).toBe(450);
+    expect(returnDuration(180)).toBe(900);
+    expect(returnDuration(-180)).toBe(900);
+    expect(returnDuration(1000)).toBe(1400);
   });
 });
