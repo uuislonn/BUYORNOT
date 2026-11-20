@@ -1,0 +1,222 @@
+.stage {
+  position: relative;
+  height: clamp(390px, 35.7vw, 570px);
+  width: 100%;
+  overflow: hidden;
+}
+.dial {
+  --dial-angle: -12deg;
+  position: relative;
+  width: min(974px, 76vw);
+  aspect-ratio: 1;
+  margin: 0 auto;
+  border-radius: 50%;
+  outline: none;
+}
+.dial:focus-visible {
+  outline: 2px solid #0100fe;
+  outline-offset: -8px;
+}
+.rotor {
+  position: absolute;
+  inset: 0;
+  transform: rotate(var(--dial-angle));
+  will-change: transform;
+  user-select: none;
+  pointer-events: none;
+}
+.phone {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 12px 18px #00000015);
+}
+.pocket {
+  position: absolute;
+  width: 14.8%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%) rotate(calc(-1 * var(--dial-angle)));
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at 35% 20%,
+    #f9f9f9,
+    #d8d8d9 70%,
+    #b5b6b8
+  );
+  box-shadow:
+    inset 0 3px 7px #0005,
+    0 0 0 1px #fafafa90;
+  display: grid;
+  place-items: center;
+}
+.pocketRim {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid #fff8;
+  border-top-color: #fff;
+  border-bottom-color: #7778;
+  transform: rotate(var(--dial-angle));
+}
+.pocket img {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: scale(1.16);
+  filter: drop-shadow(0 4px 3px #0002);
+}
+.hitArea {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.hitArea circle {
+  pointer-events: stroke;
+  touch-action: none;
+  cursor: grab;
+}
+.dial[data-dragging="true"] .hitArea circle {
+  cursor: grabbing;
+}
+.center {
+  position: absolute;
+  width: 35%;
+  aspect-ratio: 1;
+  top: 47.8%;
+  left: 50.8%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 35% 25%, #d1d2bf, #b9baa8 75%);
+  box-shadow: inset 0 0 18px #686b5b50;
+  display: grid;
+  place-items: center;
+  z-index: 2;
+}
+.centerActions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 18px;
+}
+.centerActions a {
+  text-decoration: none;
+  font-size: clamp(11px, 1.15vw, 18px);
+  font-weight: 500;
+  padding: 12px 15px;
+  border-radius: 12px;
+  transition:
+    transform 0.2s,
+    background 0.2s;
+  text-align: center;
+}
+.centerActions .primary {
+  color: #fff;
+  background: #111;
+  border: 2px solid #111;
+}
+.centerActions .secondary {
+  color: #111;
+  border: 2px solid #0003;
+  background: #dedfce88;
+}
+.centerActions a:hover {
+  transform: translateY(-3px);
+}
+.centerActions .secondary:hover {
+  background: #eeefdf;
+}
+.centerActions a:active {
+  transform: scale(0.97);
+}
+.centerActions a:focus-visible,
+.controls button:focus-visible {
+  outline: 3px solid #0100fe;
+  outline-offset: 4px;
+}
+.controls {
+  position: absolute;
+  left: 24px;
+  bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 3;
+}
+.controls p {
+  color: #555;
+  font-size: 11px;
+  letter-spacing: -0.02em;
+}
+.controls p span {
+  display: block;
+  color: #999;
+  font-size: 10px;
+  margin-top: 3px;
+}
+.controls button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #ddd;
+  background: #ffffffd9;
+  color: #111;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    transform 0.2s;
+}
+.controls button:hover {
+  background: #eee;
+  transform: scale(1.08);
+}
+@media (max-width: 767px) {
+  .stage {
+    height: 83vw;
+    min-height: 310px;
+    max-height: 540px;
+  }
+  .dial {
+    width: 122vw;
+    margin-left: -11vw;
+  }
+  .centerActions {
+    padding: 12px;
+    gap: 6px;
+    flex-direction: column;
+  }
+  .centerActions a {
+    padding: 8px 11px;
+    border-radius: 9px;
+    font-size: clamp(10px, 2.5vw, 15px);
+  }
+  .controls {
+    left: 12px;
+    bottom: 12px;
+  }
+  .controls p {
+    font-size: 10px;
+  }
+  .controls p span {
+    display: none;
+  }
+  .pocketRim {
+    border-width: 1px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rotor {
+    will-change: auto;
+  }
+  .centerActions a,
+  .controls button {
+    transition: none;
+  }
+}
