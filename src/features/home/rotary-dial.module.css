@@ -78,7 +78,7 @@
   position: absolute;
   width: 43%;
   aspect-ratio: 1;
-  top: 49.5%;
+  top: 47.5%;
   left: 49.5%;
   transform: translate(-50%, -50%);
   border-radius: 50%;
@@ -98,10 +98,10 @@
 }
 .centerActions a {
   text-decoration: none;
-  font-size: clamp(11px, 1.15vw, 18px);
+  font-size: clamp(11px, 1vw, 16px);
   font-weight: 500;
-  padding: 12px 15px;
-  border-radius: 12px;
+  padding: 9px 12px;
+  border-radius: 10px;
   transition:
     transform 0.2s,
     background 0.2s;
@@ -177,9 +177,9 @@
     flex-direction: column;
   }
   .centerActions a {
-    padding: 8px 11px;
+    padding: 7px 9px;
     border-radius: 9px;
-    font-size: clamp(10px, 2.5vw, 15px);
+    font-size: clamp(10px, 2.3vw, 14px);
   }
   .controls {
     left: 12px;
