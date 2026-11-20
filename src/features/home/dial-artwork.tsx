@@ -24,8 +24,8 @@ export const dialProducts = [
   {
     key: "foundation",
     source: [261, 248, 60, 152],
-    target: [269, 259, 47, 122],
-    center: [289, 318, 72, 77],
+    target: [191, 641, 47, 122],
+    center: [211, 700, 73, 75],
   },
   {
     key: "shoe",
@@ -36,8 +36,8 @@ export const dialProducts = [
   {
     key: "blush",
     source: [158, 652, 105, 113],
-    target: [165, 654, 92, 101],
-    center: [211, 700, 73, 75],
+    target: [243, 272, 92, 101],
+    center: [289, 318, 72, 77],
   },
   {
     key: "beanie",
