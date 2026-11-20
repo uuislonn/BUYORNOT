@@ -11,6 +11,7 @@ import {
   pointerAngle,
 } from "./dial-physics";
 import styles from "./rotary-dial.module.css";
+import { DialArtwork } from "./dial-artwork";
 
 export function RotaryDial({ loggedIn }: { loggedIn: boolean }) {
   const root = useRef<HTMLDivElement>(null);
@@ -119,16 +120,7 @@ export function RotaryDial({ loggedIn }: { loggedIn: boolean }) {
         }}
       >
         <div className={styles.rotor} aria-hidden="true">
-          <Image
-            width={1224}
-            height={1285}
-            unoptimized
-            className={styles.phone}
-            src="/home/dial/curated-dial.png"
-            alt=""
-            draggable={false}
-            fetchPriority="high"
-          />
+          <DialArtwork className={styles.phone} />
         </div>
         <svg
           className={styles.hitArea}

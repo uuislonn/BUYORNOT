@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
@@ -53,9 +54,20 @@ describe("홈과 커뮤니티 연결", () => {
       ),
     );
   });
+  it("고해상도 원본을 축소 저장하지 않고 유지한다", () => {
+    const png = readFileSync(
+      new URL(
+        "../../../public/home/dial/curated-dial-highres.png",
+        import.meta.url,
+      ),
+    );
+    expect(png.readUInt32BE(16)).toBe(7132);
+    expect(png.readUInt32BE(20)).toBe(7492);
+  });
   it("다이얼은 확대 시 추가 손실 압축 없이 원본 PNG를 사용한다", () => {
     const html = renderToStaticMarkup(createElement(Home));
-    for (const file of ["curated-dial.png", "stop-hd.png"]) {
+    expect(html).toContain('href="/home/dial/curated-dial-highres.png"');
+    for (const file of ["stop-hd.png"]) {
       expect(html).toContain(`src="/home/dial/${file}"`);
       expect(html).not.toContain(encodeURIComponent(`/home/dial/${file}`));
     }
