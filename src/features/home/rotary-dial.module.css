@@ -1,6 +1,7 @@
 .stage {
   position: relative;
-  height: clamp(402px, 36.8vw, 587px);
+  height: 0;
+  min-height: 0;
   width: 100%;
   container-type: size;
   overflow: hidden;
@@ -8,7 +9,7 @@
 .dial {
   --dial-angle: 0deg;
   position: relative;
-  width: max(min(1043px, 81.4vw), 170cqh);
+  width: 170cqh;
   aspect-ratio: 1;
   left: 50%;
   transform: translateX(-50%);
@@ -170,15 +171,6 @@
   transform: scale(1.08);
 }
 @media (max-width: 767px) {
-  .stage {
-    height: 85.5vw;
-    min-height: 319px;
-    max-height: 556px;
-  }
-  .dial {
-    width: max(130.7vw, 170cqh);
-    margin-left: 0;
-  }
   .centerActions {
     padding: 12px;
     gap: 6px;
