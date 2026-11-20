@@ -196,10 +196,10 @@ export function RotaryDial({ loggedIn }: { loggedIn: boolean }) {
               href={loggedIn ? "/account" : "/login"}
               className={styles.primary}
             >
-              {loggedIn ? "My Page" : "Login"}
+              {loggedIn ? "마이페이지" : "로그인"}
             </Link>
             <Link href="/community" className={styles.secondary}>
-              Explore the Feed
+              살말 고민 올리기
             </Link>
           </div>
         </div>

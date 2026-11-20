@@ -106,7 +106,8 @@
   white-space: nowrap;
   transition:
     transform 0.2s,
-    background 0.2s;
+    background 0.2s,
+    color 0.2s;
   text-align: center;
 }
 .centerActions .primary {
@@ -123,7 +124,8 @@
   transform: translateY(-3px);
 }
 .centerActions .secondary:hover {
-  background: #eeefdf;
+  background: #000;
+  color: #fff;
 }
 .centerActions a:active {
   transform: scale(0.97);

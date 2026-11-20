@@ -28,9 +28,9 @@ describe("홈과 커뮤니티 연결", () => {
 
   it("홈의 Login은 큐레이션과 같은 공통 로그인 페이지로 연결된다", () => {
     const html = renderToStaticMarkup(createElement(Home));
-    expect(html).toMatch(/<a\b(?=[^>]*href="\/login")[^>]*>Login<\/a>/);
+    expect(html).toMatch(/<a\b(?=[^>]*href="\/login")[^>]*>로그인<\/a>/);
     expect(html).toMatch(
-      /<a\b(?=[^>]*href="\/community")[^>]*>Explore the Feed<\/a>/,
+      /<a\b(?=[^>]*href="\/community")[^>]*>살말 고민 올리기<\/a>/,
     );
     expect(html).not.toContain("<dialog");
   });
