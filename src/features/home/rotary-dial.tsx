@@ -120,11 +120,11 @@ export function RotaryDial({ loggedIn }: { loggedIn: boolean }) {
       >
         <div className={styles.rotor} aria-hidden="true">
           <Image
-            width={1080}
-            height={1080}
+            width={1254}
+            height={1254}
             unoptimized
             className={styles.phone}
-            src="/home/dial/original.png"
+            src="/home/dial/original-hd.png"
             alt=""
             draggable={false}
             fetchPriority="high"
@@ -183,10 +183,10 @@ export function RotaryDial({ loggedIn }: { loggedIn: boolean }) {
         </svg>
         <Image
           className={styles.stop}
-          src="/home/dial/stop.png"
+          src="/home/dial/stop-hd.png"
           unoptimized
-          width={291}
-          height={274}
+          width={1293}
+          height={1217}
           alt=""
           draggable={false}
           aria-hidden="true"
