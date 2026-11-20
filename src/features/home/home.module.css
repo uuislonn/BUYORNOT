@@ -93,7 +93,7 @@
 .storyCopy {
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: space-between;
   gap: 24px;
   padding: 0;
 }
