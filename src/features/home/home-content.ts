@@ -4,7 +4,7 @@ export const homeImages: {
   storyDetail: string | null;
   panorama: string | null;
 } = {
-  story: null,
+  story: "/home/story/portrait.png",
   storyDetail: null,
   panorama: null,
 };
