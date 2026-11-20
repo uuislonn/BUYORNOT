@@ -59,14 +59,14 @@
   animation: copyIn 0.75s ease both;
 }
 .heroCopy > p {
-  font-size: clamp(16px, 1.6vw, 24px);
+  font-size: clamp(15px, 1.45vw, 22px);
   line-height: 1.4;
   color: #727272;
   letter-spacing: -0.005em;
   margin-bottom: 24px;
 }
 .hero h1 {
-  font-size: clamp(36px, 4.24vw, 64px);
+  font-size: clamp(33px, 3.9vw, 59px);
   font-weight: 700;
   line-height: 1.1;
   letter-spacing: -0.045em;
@@ -448,11 +448,11 @@
     padding: 0 14px;
   }
   .heroCopy > p {
-    font-size: 14px;
+    font-size: 13px;
     margin-bottom: 20px;
   }
   .hero h1 {
-    font-size: clamp(28px, 6.65vw, 42px);
+    font-size: clamp(26px, 6.15vw, 39px);
     line-height: 1.25;
     letter-spacing: -0.05em;
   }

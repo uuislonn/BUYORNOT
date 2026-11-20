@@ -9,7 +9,7 @@
 .dial {
   --dial-angle: 0deg;
   position: relative;
-  width: 170cqh;
+  width: 178cqh;
   aspect-ratio: 1;
   left: 50%;
   transform: translateX(-50%);
