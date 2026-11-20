@@ -119,7 +119,7 @@ export function RotaryDial({ loggedIn }: { loggedIn: boolean }) {
           <Image
             width={974}
             height={974}
-            sizes="(max-width: 767px) 125.7vw, 78.3vw"
+            sizes="(max-width: 767px) 130.7vw, 81.4vw"
             className={styles.phone}
             src="/home/dial/original.png"
             alt=""
@@ -131,7 +131,7 @@ export function RotaryDial({ loggedIn }: { loggedIn: boolean }) {
             src="/home/dial/metal-repair.png"
             width={1329}
             height={1329}
-            sizes="(max-width: 767px) 125.7vw, 78.3vw"
+            sizes="(max-width: 767px) 130.7vw, 81.4vw"
             alt=""
             draggable={false}
           />

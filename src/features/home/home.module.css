@@ -43,6 +43,9 @@
   -webkit-tap-highlight-color: transparent;
 }
 .hero {
+  min-height: calc(100svh - var(--home-header-height, 64px));
+  display: flex;
+  flex-direction: column;
   padding-top: 84px;
   overflow: hidden;
   border-bottom: 1px solid #f1f1f1;
@@ -72,6 +75,7 @@
   display: block;
 }
 .heroCopy + div {
+  flex: 1 0 auto;
   margin-top: 38px;
 }
 .story {

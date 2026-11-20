@@ -7,7 +7,7 @@
 .dial {
   --dial-angle: 0deg;
   position: relative;
-  width: min(1003px, 78.3vw);
+  width: min(1043px, 81.4vw);
   aspect-ratio: 1;
   margin: 0 auto;
   border-radius: 50%;
@@ -173,8 +173,8 @@
     max-height: 556px;
   }
   .dial {
-    width: 125.7vw;
-    margin-left: -12.85vw;
+    width: 130.7vw;
+    margin-left: -15.35vw;
   }
   .centerActions {
     padding: 12px;

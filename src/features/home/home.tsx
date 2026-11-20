@@ -43,6 +43,21 @@ export default function Home() {
   }, []);
   useEffect(() => {
     const root = home.current;
+    const header = root?.querySelector("header");
+    if (!root || !header) return;
+    const measure = () =>
+      root.style.setProperty(
+        "--home-header-height",
+        `${header.getBoundingClientRect().height}px`,
+      );
+    measure();
+    if (!window.ResizeObserver) return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(header);
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
+    const root = home.current;
     if (
       !root ||
       !window.IntersectionObserver ||
