@@ -38,3 +38,27 @@ export function productPricing(
     discountRate: discount > 0 ? discount : null,
   };
 }
+
+export function offerOriginalPrice(specification: unknown): number | null {
+  const entries = Array.isArray(specification)
+    ? specification
+    : [specification];
+  for (const entry of entries) {
+    if (!entry || typeof entry !== "object") continue;
+    const { priceType, price, priceCurrency } = entry as Record<
+      string,
+      unknown
+    >;
+    if (
+      typeof priceType !== "string" ||
+      !/^(?:https?:\/\/schema\.org\/)?(?:StrikethroughPrice|ListPrice)$/i.test(
+        priceType,
+      ) ||
+      (priceCurrency !== undefined && priceCurrency !== "KRW")
+    )
+      continue;
+    const original = parseWon(price);
+    if (original !== null) return original;
+  }
+  return null;
+}

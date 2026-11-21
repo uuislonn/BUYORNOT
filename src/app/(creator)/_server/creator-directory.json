@@ -1,0 +1,255 @@
+[
+  {
+    "room": {
+      "id": "fictional-nayun",
+      "ownerId": "fictional-profile-nayun",
+      "handle": "stylist_unnie",
+      "title": "옆집언니 최실장의 큐레이션 룸",
+      "bio": "스타일리스트의 시선으로 살펴보는 데일리 패션. 단정한 실루엣, 활용도 높은 가방과 신발을 중심으로 모았어요.",
+      "cover": "/creators/siljang-banner.jpg",
+      "links": [
+        {
+          "label": "YouTube",
+          "url": "https://www.youtube.com/channel/UCzYB6YA5f-Tc7GQcIese7pg"
+        }
+      ],
+      "topics": ["여성 패션", "데일리룩", "가방"],
+      "editorial": {
+        "headline": "함께 고민하는 취향",
+        "description": "공개 채널의 패션 스타일을 참고해 모은 상품으로, 내 옷장에 어울릴지 함께 고민해요."
+      }
+    },
+    "owner": {
+      "id": "fictional-profile-nayun",
+      "nickname": "옆집언니 최실장",
+      "role": "CREATOR",
+      "avatar": "/creators/siljang-avatar.jpg",
+      "verified": false
+    },
+    "productUrls": [
+      "https://www.musinsa.com/products/5367757",
+      "https://www.musinsa.com/products/5339985",
+      "https://www.musinsa.com/products/3575082",
+      "https://www.musinsa.com/products/4456920",
+      "https://www.musinsa.com/products/4436696",
+      "https://www.musinsa.com/products/4846817",
+      "https://www.musinsa.com/products/2343665"
+    ]
+  },
+  {
+    "room": {
+      "id": "fictional-yuri",
+      "ownerId": "fictional-profile-yuri",
+      "handle": "yyyyyyyyyyhk",
+      "title": "김무비의 큐레이션 룸",
+      "bio": "구독자 장바구니를 함께 고민하는 패션 취향. 니트·블라우스·스커트와 작은 가방을 중심으로 살펴봐요.",
+      "cover": "/creators/movie-banner.jpg",
+      "links": [
+        {
+          "label": "YouTube",
+          "url": "https://www.youtube.com/channel/UCdpeN8LUQJlDDbRZQTWJBmA"
+        }
+      ],
+      "topics": ["여성 패션", "장바구니", "포인트 아이템"],
+      "editorial": {
+        "headline": "함께 고민하는 취향",
+        "description": "공개 채널의 패션 스타일을 참고해 모은 상품으로, 내 옷장에 어울릴지 함께 고민해요."
+      }
+    },
+    "owner": {
+      "id": "fictional-profile-yuri",
+      "nickname": "김무비 MOVIEKIM",
+      "role": "CREATOR",
+      "avatar": "/creators/movie-avatar.jpg",
+      "verified": false
+    },
+    "productUrls": [
+      "https://www.musinsa.com/products/4443613",
+      "https://www.musinsa.com/products/6237363",
+      "https://www.musinsa.com/products/5052512",
+      "https://www.musinsa.com/products/5979979",
+      "https://www.musinsa.com/products/3733534",
+      "https://www.musinsa.com/products/2697696",
+      "https://www.musinsa.com/products/6012511",
+      "https://www.musinsa.com/products/5303109"
+    ]
+  },
+  {
+    "room": {
+      "id": "fictional-rion",
+      "ownerId": "fictional-profile-rion",
+      "handle": "fitthesize",
+      "title": "핏더사이즈의 큐레이션 룸",
+      "bio": "캐주얼한 남성 패션과 데님, 스니커즈. 여유 있는 핏과 일상에서 자주 입는 조합을 중심으로 모았어요.",
+      "cover": "/creators/fit-style.jpg",
+      "links": [
+        {
+          "label": "YouTube",
+          "url": "https://www.youtube.com/channel/UCKWv0ScT6PpZcpg7ivUVWLA"
+        }
+      ],
+      "topics": ["남성 패션", "캐주얼", "데님"],
+      "editorial": {
+        "headline": "함께 고민하는 취향",
+        "description": "공개 채널의 패션 스타일을 참고해 모은 상품으로, 내 옷장에 어울릴지 함께 고민해요."
+      }
+    },
+    "owner": {
+      "id": "fictional-profile-rion",
+      "nickname": "핏더사이즈",
+      "role": "CREATOR",
+      "avatar": "/creators/fit-avatar.jpg",
+      "verified": false
+    },
+    "productUrls": [
+      "https://www.musinsa.com/products/3765781",
+      "https://www.musinsa.com/products/2425479",
+      "https://www.musinsa.com/products/2283929",
+      "https://www.musinsa.com/products/104238",
+      "https://www.musinsa.com/products/1163169",
+      "https://www.musinsa.com/products/4418594"
+    ]
+  },
+  {
+    "room": {
+      "id": "fictional-seowoo",
+      "ownerId": "fictional-profile-seowoo",
+      "handle": "깡스타일리스트",
+      "title": "깡스타일리스트의 큐레이션 룸",
+      "bio": "기본 아이템으로 완성하는 남성 스타일링. 니트와 슬랙스, 셔츠에 어울리는 깔끔한 신발을 함께 살펴봐요.",
+      "cover": "/creators/kkang-editorial-v2.jpg",
+      "links": [
+        {
+          "label": "YouTube",
+          "url": "https://www.youtube.com/channel/UC8a6z7i9qypp9PqJ_0HhBrw"
+        }
+      ],
+      "topics": ["남성 패션", "기본템", "미니멀"],
+      "editorial": {
+        "headline": "함께 고민하는 취향",
+        "description": "공개 채널의 패션 스타일을 참고해 모은 상품으로, 내 옷장에 어울릴지 함께 고민해요."
+      }
+    },
+    "owner": {
+      "id": "fictional-profile-seowoo",
+      "nickname": "깡스타일리스트",
+      "role": "CREATOR",
+      "avatar": "/creators/kkang-avatar.jpg",
+      "verified": false
+    },
+    "productUrls": [
+      "https://www.musinsa.com/products/2778661",
+      "https://www.musinsa.com/products/1168906",
+      "https://www.musinsa.com/products/3765781",
+      "https://www.musinsa.com/products/4795202",
+      "https://www.musinsa.com/products/4201442",
+      "https://www.musinsa.com/products/4456920"
+    ]
+  },
+  {
+    "room": {
+      "id": "fictional-doa",
+      "ownerId": "fictional-profile-doa",
+      "handle": "wt830",
+      "title": "최겨울의 큐레이션 룸",
+      "bio": "데님·아우터·스니커즈로 만드는 스트리트 무드. 루즈한 실루엣과 힘 있는 소재, 포인트가 되는 조합을 모았어요.",
+      "cover": "/creators/winter-editorial-v2.png",
+      "links": [
+        {
+          "label": "YouTube",
+          "url": "https://www.youtube.com/channel/UCbOwqHbQf0uspeRe7lY8e6Q"
+        }
+      ],
+      "topics": ["남성 패션", "스트리트", "아우터"],
+      "editorial": {
+        "headline": "함께 고민하는 취향",
+        "description": "공개 채널의 패션 스타일을 참고해 모은 상품으로, 내 옷장에 어울릴지 함께 고민해요."
+      }
+    },
+    "owner": {
+      "id": "fictional-profile-doa",
+      "nickname": "최겨울",
+      "role": "CREATOR",
+      "avatar": "/creators/winter-avatar.jpg",
+      "verified": false
+    },
+    "productUrls": [
+      "https://www.musinsa.com/products/4795202",
+      "https://www.musinsa.com/products/2283929",
+      "https://www.musinsa.com/products/2425479",
+      "https://www.musinsa.com/products/104238",
+      "https://www.musinsa.com/products/4201442",
+      "https://www.musinsa.com/products/4418594"
+    ]
+  },
+  {
+    "room": {
+      "id": "leeyull",
+      "ownerId": "leeyull-profile",
+      "handle": "LeeyullArt",
+      "title": "이율아트 Leeyull Art의 큐레이션 룸",
+      "bio": "오래 곁에 둘 명품을 고민하는 공간. 클래식한 가방과 가죽 소품, 단정한 코트와 로퍼를 함께 살펴봐요.",
+      "cover": "/creators/leeyull-banner.jpg",
+      "links": [
+        {
+          "label": "YouTube",
+          "url": "https://www.youtube.com/channel/UCvU5Kid2zXJacwjEWgJmtPA"
+        }
+      ],
+      "topics": ["명품", "클래식", "가방·잡화"],
+      "editorial": {
+        "headline": "함께 고민하는 취향",
+        "description": "공개 채널의 패션 스타일을 참고해 모은 상품으로, 내 옷장에 어울릴지 함께 고민해요."
+      }
+    },
+    "owner": {
+      "id": "leeyull-profile",
+      "nickname": "이율아트 Leeyull Art",
+      "role": "CREATOR",
+      "avatar": "/creators/leeyull-avatar.jpg",
+      "verified": false
+    },
+    "productUrls": [
+      "https://www.musinsa.com/products/2040896",
+      "https://www.musinsa.com/products/3254405",
+      "https://www.celine.com/ko-kr/%EC%97%AC%EC%84%B1/%EA%B0%80%EC%A3%BD-%EC%86%8C%ED%92%88/%EC%B9%B4%EB%93%9C-%EC%A7%80%EA%B0%91/%ED%8A%B8%EB%A6%AC%EC%98%B9%ED%94%84-%EC%B9%B4%EB%93%9C-%EC%A7%80%EA%B0%91---%ED%8A%B8%EB%A6%AC%EC%98%B9%ED%94%84-%EC%BA%94%EB%B2%84%EC%8A%A4-10L832CQH.04LU.html",
+      "https://www.musinsa.com/products/2251822",
+      "https://www.musinsa.com/products/4331354"
+    ]
+  },
+  {
+    "room": {
+      "id": "yuria",
+      "ownerId": "yuria-profile",
+      "handle": "Yuria",
+      "title": "유리아의 큐레이션 룸",
+      "bio": "트렌디한 명품 가방과 포인트 슈즈를 함께 골라요. 눈길 가는 디자인이 내 일상에서도 잘 쓰일지 고민해 보는 공간이에요.",
+      "cover": "/creators/yuria-banner.jpg",
+      "links": [
+        {
+          "label": "YouTube",
+          "url": "https://www.youtube.com/channel/UC00DJ04oplqj4IUUB5vSwZw"
+        }
+      ],
+      "topics": ["명품", "트렌드", "가방·슈즈"],
+      "editorial": {
+        "headline": "함께 고민하는 취향",
+        "description": "공개 채널의 패션 스타일을 참고해 모은 상품으로, 내 옷장에 어울릴지 함께 고민해요."
+      }
+    },
+    "owner": {
+      "id": "yuria-profile",
+      "nickname": "유리아",
+      "role": "CREATOR",
+      "avatar": "/creators/yuria-avatar.jpg",
+      "verified": false
+    },
+    "productUrls": [
+      "https://www.musinsa.com/products/4331354",
+      "https://www.musinsa.com/products/3193092",
+      "https://www.musinsa.com/products/2251822",
+      "https://www.celine.com/ko-kr/%EC%97%AC%EC%84%B1/%EA%B0%80%EC%A3%BD-%EC%86%8C%ED%92%88/%EC%B9%B4%EB%93%9C-%EC%A7%80%EA%B0%91/%ED%8A%B8%EB%A6%AC%EC%98%B9%ED%94%84-%EC%B9%B4%EB%93%9C-%EC%A7%80%EA%B0%91---%ED%8A%B8%EB%A6%AC%EC%98%B9%ED%94%84-%EC%BA%94%EB%B2%84%EC%8A%A4-10L832CQH.04LU.html",
+      "https://www.musinsa.com/products/3254405"
+    ]
+  }
+]

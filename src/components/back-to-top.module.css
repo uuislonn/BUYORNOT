@@ -1,0 +1,29 @@
+.button {
+  position: fixed;
+  right: 24px;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  z-index: 30;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid #e5e5eb;
+  border-radius: 50%;
+  background: #fff;
+  color: #19191f;
+  box-shadow: 0 2px 8px #19191f12;
+  cursor: pointer;
+}
+.button:hover {
+  color: #0100fe;
+}
+.button:focus-visible {
+  outline: 2px solid #0100fe;
+  outline-offset: 3px;
+}
+@media (max-width: 767px) {
+  .button {
+    right: 16px;
+    bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+}

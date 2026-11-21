@@ -1,3 +1,11 @@
+:root {
+  --page-gutter: 7.6%;
+}
+@media (max-width: 767px) {
+  :root {
+    --page-gutter: 20px;
+  }
+}
 * {
   box-sizing: border-box;
 }

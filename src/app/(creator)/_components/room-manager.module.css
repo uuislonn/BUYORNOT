@@ -1,0 +1,235 @@
+.page {
+  min-height: 100vh;
+  background: #fafaf9;
+  color: #202020;
+}
+.header {
+  height: 80px;
+  padding: 0 5%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e6e6e6;
+  background: white;
+}
+.header > a {
+  font-size: 24px;
+  font-weight: 800;
+}
+.header nav {
+  display: flex;
+  gap: 24px;
+  font-size: 13px;
+}
+.main {
+  max-width: none;
+  margin: auto;
+  padding-block: 52px 80px;
+  padding-inline: var(--page-gutter);
+}
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: #0100fe;
+  font-weight: 700;
+}
+.main h1 {
+  font-size: 34px;
+  margin: 12px 0;
+}
+.intro {
+  color: #777;
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin: 32px 0;
+}
+.stats > * {
+  background: white;
+  border: 1px solid #e5e5e5;
+  padding: 22px;
+  border-radius: 14px;
+  text-align: left;
+  color: inherit;
+}
+.stats span {
+  font-size: 13px;
+  color: #777;
+}
+.stats strong {
+  display: block;
+  font-size: 30px;
+  margin-top: 14px;
+}
+.stats small {
+  font-size: 12px;
+  font-weight: 400;
+  margin-left: 6px;
+}
+.tabs {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 26px;
+}
+.tabs button {
+  padding: 16px 0;
+  border: 0;
+  background: none;
+  color: #777;
+}
+.tabs button[aria-pressed="true"] {
+  color: #0100fe;
+  border-bottom: 2px solid #0100fe;
+  font-weight: 700;
+}
+.tabs a {
+  margin-left: auto;
+  font-size: 13px;
+}
+.filters {
+  display: flex;
+  gap: 8px;
+}
+.filters button {
+  border: 1px solid #ddd;
+  background: white;
+  border-radius: 22px;
+  padding: 9px 16px;
+}
+.filters button[aria-pressed="true"] {
+  background: #202020;
+  color: white;
+  border-color: #202020;
+}
+.main section > p {
+  font-size: 13px;
+  color: #777;
+  line-height: 1.7;
+}
+.list {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+.card {
+  display: grid;
+  grid-template-columns: 90px 1fr auto;
+  gap: 22px;
+  align-items: center;
+  padding: 18px;
+  background: white;
+  border: 1px solid #e7e7e7;
+  border-radius: 14px;
+}
+.photo {
+  height: 108px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+}
+.card h2 {
+  font-size: 15px;
+  margin: 9px 0;
+}
+.card p {
+  font-size: 13px;
+  line-height: 1.6;
+}
+.card small {
+  color: #777;
+  font-size: 11px;
+}
+.card > a {
+  color: #0100fe;
+  font-size: 12px;
+  font-weight: 700;
+}
+.settings {
+  max-width: 680px;
+  padding: 28px;
+  background: white;
+  border: 1px solid #e7e7e7;
+  border-radius: 14px;
+}
+.settings h2 {
+  font-size: 20px;
+}
+.settings label {
+  display: grid;
+  gap: 10px;
+  font-size: 13px;
+  margin: 22px 0;
+}
+.settings input,
+.settings textarea {
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 13px;
+  font: inherit;
+}
+.settings button {
+  background: #0100fe;
+  color: white;
+  padding: 12px 22px;
+  border: 0;
+  border-radius: 8px;
+}
+.settings button:disabled {
+  opacity: 0.5;
+}
+.empty {
+  padding: 45px;
+  text-align: center;
+}
+.page button {
+  cursor: pointer;
+  font: inherit;
+}
+.page a:focus-visible,
+.page button:focus-visible {
+  outline: 2px solid #0100fe;
+  outline-offset: 4px;
+}
+@media (max-width: 700px) {
+  .main {
+    padding-block: 30px;
+  }
+  .main h1 {
+    font-size: 26px;
+  }
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .stats > * {
+    padding: 16px;
+  }
+  .card {
+    grid-template-columns: 70px 1fr;
+    gap: 14px;
+  }
+  .card > a {
+    grid-column: 2;
+  }
+  .tabs {
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .tabs a {
+    margin-left: 0;
+    padding-bottom: 12px;
+  }
+  .header {
+    height: 66px;
+  }
+  .header > a {
+    font-size: 20px;
+  }
+  .header nav {
+    gap: 14px;
+  }
+}

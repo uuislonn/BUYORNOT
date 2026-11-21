@@ -64,12 +64,12 @@
   place-items: center;
 }
 .layout {
-  max-width: 1280px;
   margin: auto;
   display: grid;
   grid-template-columns: 225px minmax(0, 1fr);
   gap: 55px;
-  padding: 44px 24px 0;
+  padding-block: 44px 0;
+  padding-inline: var(--page-gutter);
 }
 .sidebar {
   border-right: 1px solid #eceef3;
@@ -113,12 +113,8 @@
   font-size: 16px;
   margin-left: 3px;
 }
-.provider {
-  font-size: 11px;
-  color: #9599a4;
-  margin: 5px 0 12px;
-}
 .profile button {
+  margin-top: 12px;
   background: none;
   border: 0;
   color: #646c7b;
@@ -445,8 +441,33 @@
   height: 100%;
 }
 .postContent {
+  position: relative;
   flex: 1;
   min-width: 0;
+}
+.participationPost {
+  position: relative;
+}
+.participationPost:hover h3,
+.participationPost:focus-within h3 {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.postDetailButton {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+}
+.postContent:hover h3,
+.postContent:focus-within h3 {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .postMeta {
   display: flex;
@@ -500,7 +521,7 @@
 .postBottom > span {
   font-size: 12px;
 }
-.postBottom > a {
+.postBottom > .resultLink {
   font-size: 10px;
   font-weight: 500;
   color: #9ba2b0;
@@ -511,14 +532,27 @@
   align-items: flex-end;
   flex-direction: column;
   gap: 8px;
-  min-width: 65px;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.postActionButtons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+  color: #9299a7;
+  font-size: 10px;
+  white-space: nowrap;
 }
 .postActions button {
   background: none;
   border: 0;
-  color: #9ba2af;
-  font-size: 10px;
-  padding: 0;
+  color: #626a7a;
+  font-size: 11px;
+  padding: 3px 0;
+}
+.postActions button:disabled {
+  opacity: 0.55;
 }
 .days {
   font-size: 9px;
@@ -679,7 +713,6 @@
 }
 @media (min-width: 1500px) {
   .layout {
-    max-width: 1340px;
     gap: 64px;
     grid-template-columns: 235px minmax(0, 1fr);
   }
@@ -726,7 +759,7 @@
   }
   .layout {
     display: block;
-    padding: 23px 20px 0;
+    padding-top: 23px;
   }
   .sidebar {
     border: 0;
@@ -806,9 +839,6 @@
   .postMeta {
     gap: 7px;
     font-size: 8px;
-  }
-  .postActions {
-    min-width: 42px;
   }
   .days {
     font-size: 8px;
@@ -1194,4 +1224,78 @@
 .page .logo img {
   flex-shrink: 0;
   object-fit: contain;
+}
+
+.savedGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 240px));
+  gap: 16px;
+  margin-top: 24px;
+}
+.savedCard {
+  min-width: 0;
+  border: 1px solid #e5e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: white;
+  display: flex;
+  flex-direction: column;
+}
+.savedVisual {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #f4f4f2;
+}
+.savedBody {
+  padding: 14px;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.savedBody > small {
+  color: #858d9d;
+  font-size: 11px;
+}
+.savedBody > h3 {
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+}
+.savedBody > p {
+  color: #858d9d;
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 0 0 14px;
+}
+.savedBody > a {
+  margin-top: auto;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+@media (max-width: 600px) {
+  .savedGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .savedBody {
+    padding: 12px;
+  }
+}
+@media (max-width: 360px) {
+  .savedGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.imagePlaceholder {
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  color: #9299a7;
 }

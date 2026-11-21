@@ -1,25 +1,31 @@
 "use client";
+import { SortMenu } from "../../../features/community/sort-menu";
+import { CategoryFilter } from "../../../features/community/category-filter";
+import { SiteHeader } from "../../../components/site-header";
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import * as actions from "../_server/actions";
 import {
   CATEGORIES,
-  type ApplicationInput,
   type CurationRequest,
   type Decision,
   type RequestInput,
   type Result,
   type Snapshot,
-  type Status,
 } from "../_lib/types";
-import { daysRemaining, effectiveStatus, meetsFastTrack } from "../_lib/policy";
-import { getAffiliateLink } from "../_lib/product-url";
+import {
+  compareRoomRequests,
+  effectiveStatus,
+  meetsFastTrack,
+  roomStatus,
+  type RoomStatus,
+} from "../_lib/policy";
+import { ProductCardLayout } from "./product-card-layout";
 import { ProductCard } from "./product-card";
-import { ProductPrice } from "./product-price";
+import { RequestDetail } from "./request-detail";
 import { SamplePhoto } from "./sample-photo";
 import { RequestForm } from "./request-form";
-import { ApplicationForm } from "./application-form";
 import { Modal } from "./modal";
 import { Icon, Verified } from "./icons";
 import s from "./creator.module.css";
@@ -29,17 +35,19 @@ type OpenModal =
   | { type: "login" }
   | { type: "info"; title: string; text: string }
   | { type: "write"; edit?: CurationRequest }
-  | { type: "apply" }
   | { type: "evaluate"; request: CurationRequest; decision: Decision }
   | { type: "delete"; request: CurationRequest }
   | { type: "detail"; request: CurationRequest }
-  | { type: "reject"; applicationId: string }
-  | { type: "applicationStatus" };
+  | { type: "reject"; applicationId: string };
 // TODO: replace with UI component — all controls are local to Part B until the shared UI exists.
 export function CreatorWorkspace({ initial }: { initial: Snapshot }) {
   const [data, setData] = useState(initial);
+  const [confirmedViews, setConfirmedViews] = useState<Record<string, number>>(
+    {},
+  );
   const [modal, setModal] = useState<OpenModal | null>(null);
   const [comment, setComment] = useState("");
+  const [hold, setHold] = useState(false);
   const [toast, setToast] = useState<{ text: string; error: boolean } | null>(
     null,
   );
@@ -48,51 +56,78 @@ export function CreatorWorkspace({ initial }: { initial: Snapshot }) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
+  const usesChannelBanner =
+    data.creator.cover?.startsWith("/creators/") ||
+    ["i0cc0i", "sopppppphyyyy"].includes(data.creator.handle);
+  const requestId = params.get("request");
+  const linkedRequest = requestId
+    ? data.requests.find((request) => request.id === requestId)
+    : null;
+  const detailRequest =
+    modal?.type === "detail" ? modal.request : modal ? null : linkedRequest;
   const rawView = params.get("view");
   const view: View =
     rawView === "shop" || (rawView === "admin" && data.viewer?.role === "ADMIN")
       ? rawView
       : "room";
-  const rawStatus = params.get("status");
-  const status: Status =
-    rawStatus === "BUY" || rawStatus === "NOT" || rawStatus === "EXPIRED"
-      ? rawStatus
-      : "ING";
-  const availableCategories = data.creator.id.startsWith("fictional-")
-    ? CATEGORIES.filter(
-        (c) =>
-          c === "전체" ||
-          data.requests.some((post) => post.product.category === c),
-      )
-    : CATEGORIES;
-  const category =
-    availableCategories.find((c) => c === params.get("category")) ?? "전체";
-  const sort = params.get("sort") === "oldest" ? "oldest" : "latest";
   const isOwner =
     data.viewer?.id === data.creator.ownerId && data.viewer?.role === "CREATOR";
+  const rawStatus = params.get("status");
+  const status: RoomStatus | "ALL" =
+    rawStatus === "BUY" ||
+    rawStatus === "NOT" ||
+    rawStatus === "EXPIRED" ||
+    rawStatus === "ING" ||
+    (isOwner && rawStatus === "HOLD")
+      ? rawStatus
+      : "ALL";
+  const shop = data.recommendations ?? [];
+  const availableCategories =
+    view === "shop"
+      ? CATEGORIES.filter(
+          (c) => c === "전체" || shop.some((product) => product.category === c),
+        )
+      : data.creator.id.startsWith("fictional-")
+        ? CATEGORIES.filter(
+            (c) =>
+              c === "전체" ||
+              data.requests.some((post) => post.product.category === c),
+          )
+        : CATEGORIES;
+  const category =
+    availableCategories.find((c) => c === params.get("category")) ?? "전체";
+  const rawSort = params.get("sort");
+  const sort = rawSort === "oldest" || rawSort === "views" ? rawSort : "latest";
   const requests = data.requests.map((r) => ({
     ...r,
     status: effectiveStatus(r, now),
+    views: Math.max(r.views ?? 0, confirmedViews[r.id] ?? 0),
   }));
-  const counts = (state: Status) =>
-    requests.filter((r) => r.status === state).length;
-  const evaluated = requests.filter(
-    (r) =>
-      (r.status === "BUY" || r.status === "NOT") &&
-      data.evaluations.some((e) => e.requestId === r.id),
+  const counts = (state: RoomStatus | "ALL") =>
+    requests.filter((r) => state === "ALL" || roomStatus(r, isOwner) === state)
+      .length;
+  const recommendations = shop.filter(
+    (product) => category === "전체" || product.category === category,
   );
-  const shop = evaluated.filter((r) => r.status === "BUY");
-  const categorySource =
-    view === "shop" ? shop : requests.filter((r) => r.status === status);
-  const list = categorySource
+  const list = requests
+    .filter((r) => status === "ALL" || roomStatus(r, isOwner) === status)
     .filter((r) => category === "전체" || r.product.category === category)
-    .sort(
-      (a, b) =>
-        (sort === "latest" ? -1 : 1) *
-        (view === "room" ? a.createdAt : a.updatedAt).localeCompare(
-          view === "room" ? b.createdAt : b.updatedAt,
-        ),
-    );
+    .sort((a, b) => compareRoomRequests(a, b, sort, "createdAt"));
+  function openDetail(request: CurationRequest) {
+    setModal({ type: "detail", request });
+    void actions
+      .recordRequestView(data.creator.id, request.id)
+      .then((result) => {
+        if (!result.ok) return;
+        setConfirmedViews((current) => ({
+          ...current,
+          [request.id]: Math.max(current[request.id] ?? 0, result.data),
+        }));
+      })
+      .catch(() => {
+        // Opening a post still works if view counting is temporarily unavailable.
+      });
+  }
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 30000);
     return () => window.clearInterval(timer);
@@ -193,6 +228,7 @@ export function CreatorWorkspace({ initial }: { initial: Snapshot }) {
         return;
       }
       setComment("");
+      setHold(false);
       setModal({ type: "evaluate", request: item, decision });
     });
   }
@@ -201,6 +237,12 @@ export function CreatorWorkspace({ initial }: { initial: Snapshot }) {
     if (modal?.type !== "evaluate") return;
     const { request, decision } = modal;
     setModal(null);
+    if (hold) {
+      run(() => actions.holdCurationRequest(request.id, data.creator.id), {
+        success: "고민을 보류했어요.",
+      });
+      return;
+    }
     run(
       () =>
         actions.evaluateCurationRequest(
@@ -214,7 +256,12 @@ export function CreatorWorkspace({ initial }: { initial: Snapshot }) {
           ...before,
           requests: before.requests.map((r) =>
             r.id === request.id
-              ? { ...r, status: decision, updatedAt: new Date().toISOString() }
+              ? {
+                  ...r,
+                  held: false,
+                  status: decision,
+                  updatedAt: new Date().toISOString(),
+                }
               : r,
           ),
           evaluations: [
@@ -231,7 +278,7 @@ export function CreatorWorkspace({ initial }: { initial: Snapshot }) {
         }),
         success:
           decision === "BUY"
-            ? "BUY 판정이 피드와 추천 숍에 반영됐어요."
+            ? "BUY 판정이 피드에 반영됐어요."
             : "NOT 판정이 피드에 반영됐어요.",
       },
     );
@@ -259,81 +306,24 @@ export function CreatorWorkspace({ initial }: { initial: Snapshot }) {
       },
     );
   }
-  function apply() {
-    gate(() => {
-      if (data.ownApplication) {
-        setModal({ type: "applicationStatus" });
-        return;
-      }
-      if (data.viewer?.role !== "USER") {
-        setModal({
-          type: "info",
-          title: "일반 회원용 신청입니다",
-          text: "이미 크리에이터이거나 관리자 계정입니다. 일반 회원 역할에서 개설 신청을 체험해 주세요.",
-        });
-        return;
-      }
-      setModal({ type: "apply" });
-    });
-  }
-  function submitApplication(input: ApplicationInput) {
-    run(() => actions.submitCreatorApplication(input, data.creator.id), {
-      close: true,
-      success: "개설 신청이 접수됐어요. 관리자 검토를 기다려 주세요.",
-    });
-  }
   const profile = data.owner;
   const viewTitle =
     view === "room"
       ? (data.creator.editorial?.headline ?? "함께 고민하는 취향")
       : view === "shop"
-        ? "이유 있는 추천"
+        ? "크리에이터가 고른 추천 상품"
         : "크리에이터 개설 신청";
   return (
     <div className={s.shell}>
-      <header className={s.siteHeader}>
-        <Link href="/" className={s.wordmark} aria-label="Buy or Not 홈">
-          <span>Buy or Not</span>
-        </Link>
-        <nav className={s.headerNav} aria-label="주요 메뉴">
-          <Link href="/community">살말 커뮤니티</Link>
-          <button
-            type="button"
-            aria-current={view === "room" ? "page" : undefined}
-            onClick={() => query({ view: "room" })}
-          >
-            큐레이션 룸
-          </button>
-          <button
-            type="button"
-            aria-current={view === "shop" ? "page" : undefined}
-            onClick={() => query({ view: "shop" })}
-          >
-            추천 숍 <span className={s.navDot} />
-          </button>
-        </nav>
-        <div className={s.headerRight}>
-          <button type="button" className={s.applyLink} onClick={apply}>
-            {data.ownApplication ? "내 개설 신청" : "룸 개설하기"}
-            <span aria-hidden="true">↗</span>
-          </button>
-          <button
-            type="button"
-            className={s.accountButton}
-            onClick={() => {
-              router.push(data.viewer ? "/account" : "/login");
-            }}
-          >
-            {data.viewer ? data.viewer.nickname : "로그인"}
-          </button>
-        </div>
-      </header>
+      <SiteHeader
+        currentPage="creators"
+        loggedIn={!!data.viewer}
+        accountName={data.viewer?.nickname}
+        accountAvatar={data.viewer?.avatar}
+      />
       <main className={s.main}>
-        <div className={s.breadcrumb}>
-          CREATOR&apos;S ROOM <span>/</span> {data.creator.handle}
-        </div>
         <div
-          className={`${s.cover} ${data.creator.handle === "i0cc0i" ? s.channelCover : ""}`}
+          className={`${s.cover} ${usesChannelBanner ? s.channelCover : ""}`}
         >
           {data.creator.cover && (
             <SamplePhoto
@@ -344,7 +334,7 @@ export function CreatorWorkspace({ initial }: { initial: Snapshot }) {
               eager
             />
           )}
-          {data.creator.handle !== "i0cc0i" && (
+          {!usesChannelBanner && (
             <>
               <div className={s.coverShade} />
               <div className={s.coverContent}>
@@ -406,47 +396,71 @@ export function CreatorWorkspace({ initial }: { initial: Snapshot }) {
                 >
                   <Icon name="link" size={13} />
                   {link.label}
-                  <span>↗</span>
                 </a>
               ))}
             </div>
           </div>
           <div className={s.profileActions}>
-            <button
-              type="button"
-              className={s.primaryButton}
-              disabled={pending}
-              onClick={() => gate(() => setModal({ type: "write" }), "post")}
-            >
-              <Icon name="plus" size={17} />
-              살말 고민 작성하기
-            </button>
-            <button
-              type="button"
-              className={`${s.secondaryButton} ${data.following ? s.following : ""}`}
-              disabled={pending}
-              aria-pressed={data.following}
-              onClick={() =>
-                gate(() =>
-                  run(() => actions.toggleCreatorFollow(data.creator.id), {
-                    optimistic: (d) => ({
-                      ...d,
-                      following: !d.following,
-                      followerCount: d.followerCount + (d.following ? -1 : 1),
-                    }),
-                  }),
-                )
-              }
-            >
-              {data.following ? (
-                <>
-                  <Icon name="check" size={16} />
-                  팔로잉
-                </>
-              ) : (
-                "취향 팔로우"
-              )}
-            </button>
+            {isOwner ? (
+              <>
+                <Link
+                  className={s.primaryButton}
+                  href={`/creators/${data.creator.id}/manage`}
+                >
+                  내 큐레이션 룸 관리
+                </Link>
+                <button
+                  type="button"
+                  className={s.secondaryButton}
+                  onClick={() =>
+                    query({ view: "room", status: "ING", category: "전체" })
+                  }
+                >
+                  답변 대기 {counts("ING")}개
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className={s.primaryButton}
+                  disabled={pending}
+                  onClick={() =>
+                    gate(() => setModal({ type: "write" }), "post")
+                  }
+                >
+                  <Icon name="plus" size={17} />
+                  살말 고민 작성하기
+                </button>
+                <button
+                  type="button"
+                  className={`${s.secondaryButton} ${data.following ? s.following : ""}`}
+                  disabled={pending}
+                  aria-pressed={data.following}
+                  onClick={() =>
+                    gate(() =>
+                      run(() => actions.toggleCreatorFollow(data.creator.id), {
+                        optimistic: (d) => ({
+                          ...d,
+                          following: !d.following,
+                          followerCount:
+                            d.followerCount + (d.following ? -1 : 1),
+                        }),
+                      }),
+                    )
+                  }
+                >
+                  {data.following ? (
+                    <>
+                      <Icon name="check" size={16} />
+                      팔로잉
+                    </>
+                  ) : (
+                    "취향 팔로우"
+                  )}
+                </button>
+              </>
+            )}
           </div>
         </div>
         <div
@@ -508,7 +522,7 @@ export function CreatorWorkspace({ initial }: { initial: Snapshot }) {
                 {view === "room"
                   ? "THE CURATION ROOM"
                   : view === "shop"
-                    ? "THE BUY COLLECTION"
+                    ? "CREATOR’S PICKS"
                     : "CREATOR APPLICATIONS"}
               </span>
               <h2>
@@ -520,9 +534,7 @@ export function CreatorWorkspace({ initial }: { initial: Snapshot }) {
                   ? (data.creator.editorial?.description ??
                     "혼자서는 어려운 선택, 취향이 통하는 크리에이터에게 물어보세요.")
                   : view === "shop"
-                    ? data.creator.id.startsWith("fictional-")
-                      ? `${profile.nickname}의 스타일에 맞춰 구성한 추천 상품을 모았어요. 상품을 눌러 쇼핑몰에서 확인해 보세요.`
-                      : "크리에이터가 BUY를 선택한 상품만 모았어요. 구매는 원래 쇼핑몰에서."
+                    ? `${profile.nickname}의 취향과 추천 이유를 담은 상품을 소개해요. 마음에 드는 상품은 쇼핑몰에서 자세히 확인해 보세요.`
                     : "채널 소유권과 실제 활동을 확인한 후 승인해 주세요."}
               </p>
             </div>
@@ -577,7 +589,7 @@ export function CreatorWorkspace({ initial }: { initial: Snapshot }) {
                             target="_blank"
                             rel="noopener noreferrer"
                           >
-                            {a.channelType} 확인 ↗
+                            {a.channelType} 확인
                           </a>
                         </dd>
                       </div>
@@ -643,6 +655,31 @@ export function CreatorWorkspace({ initial }: { initial: Snapshot }) {
             </div>
           ) : (
             <>
+              <div className={s.filters}>
+                <CategoryFilter
+                  categories={availableCategories}
+                  value={category}
+                  onChange={(value) => query({ category: value })}
+                />
+                <div className={s.sortLabel}>
+                  <span className={s.resultCount}>
+                    {view === "shop" ? recommendations.length : list.length}개의{" "}
+                    {view === "shop" ? "추천" : "고민"}
+                  </span>
+                  {view === "room" && (
+                    <SortMenu
+                      value={sort}
+                      label="정렬"
+                      options={[
+                        { value: "latest", label: "최신순" },
+                        { value: "oldest", label: "오래된순" },
+                        { value: "views", label: "조회수순" },
+                      ]}
+                      onChange={(value) => query({ sort: value })}
+                    />
+                  )}
+                </div>
+              </div>
               {view === "room" && (
                 <div
                   className={s.statusTabs}
@@ -652,7 +689,9 @@ export function CreatorWorkspace({ initial }: { initial: Snapshot }) {
                 >
                   {(
                     [
+                      ["ALL", "전체", ""],
                       ["ING", "미답변", "ING"],
+                      ...(isOwner ? ([["HOLD", "보류", ""]] as const) : []),
                       ["BUY", "사라", "BUY"],
                       ["NOT", "마라", "NOT"],
                       ["EXPIRED", "만료 / 미투표", ""],
@@ -674,127 +713,85 @@ export function CreatorWorkspace({ initial }: { initial: Snapshot }) {
                   ))}
                 </div>
               )}
-              <div className={s.filters}>
-                <div className={s.categoryFilters} aria-label="카테고리">
-                  {availableCategories.map((c) => (
-                    <button
-                      type="button"
-                      key={c}
-                      aria-label={c}
-                      aria-pressed={category === c}
-                      onClick={() => query({ category: c })}
-                    >
-                      {c}
-                      <span className={s.categoryCount} aria-hidden="true">
-                        {
-                          categorySource.filter(
-                            (row) => c === "전체" || row.product.category === c,
-                          ).length
-                        }
-                      </span>
-                    </button>
-                  ))}
-                </div>
-                <label className={s.sortLabel}>
-                  <span className={s.resultCount}>
-                    {list.length}개의 {view === "shop" ? "추천" : "고민"}
-                  </span>
-                  <select
-                    aria-label="정렬"
-                    value={sort}
-                    onChange={(e) => query({ sort: e.target.value })}
-                  >
-                    <option value="latest">최신순</option>
-                    <option value="oldest">오래된순</option>
-                  </select>
-                </label>
-              </div>
               {view === "shop" && (
                 <p className={s.affiliateNote}>
-                  ↗ 쇼핑몰 이동은 비회원도 가능해요. 현재는 제휴 추적 없이 원본
+                  쇼핑몰 이동은 비회원도 가능해요. 현재는 제휴 추적 없이 원본
                   상품 링크로 연결됩니다. 가격과 판매 정보는 쇼핑몰 상황에 따라
                   달라질 수 있어요.
                 </p>
               )}
-              <div
-                id="request-grid"
-                className={view === "shop" ? s.shopGrid : s.cardGrid}
-                aria-busy={pending}
-              >
-                {list.map((item) =>
-                  view === "shop" ? (
-                    <ShopCard
-                      key={item.id}
-                      item={item}
-                      liked={data.likedIds.includes(item.id)}
-                      pending={pending}
-                      onHeart={() =>
-                        gate(() =>
-                          run(() =>
-                            actions.toggleRequestHeart(
-                              item.id,
-                              data.creator.id,
+              <div id="request-grid" className={s.cardGrid} aria-busy={pending}>
+                {view === "shop"
+                  ? recommendations.map((product) => (
+                      <ProductCardLayout
+                        key={product.url}
+                        product={product}
+                        image={
+                          <SamplePhoto
+                            source={product.image}
+                            alt={product.name}
+                            fit="cover"
+                          />
+                        }
+                        concern={null}
+                        category={product.category}
+                      />
+                    ))
+                  : list.map((item) => (
+                      <ProductCard
+                        key={item.id}
+                        request={item}
+                        author={data.profiles.find(
+                          (p) => p.id === item.authorId,
+                        )}
+                        evaluation={data.evaluations.find(
+                          (e) => e.requestId === item.id,
+                        )}
+                        liked={data.likedIds.includes(item.id)}
+                        canEvaluate={view === "room" && isOwner}
+                        own={
+                          view === "room" && data.viewer?.id === item.authorId
+                        }
+                        now={now}
+                        pending={pending}
+                        onHeart={() =>
+                          gate(() =>
+                            run(
+                              () =>
+                                actions.toggleRequestHeart(
+                                  item.id,
+                                  data.creator.id,
+                                ),
+                              {
+                                optimistic: (d) => ({
+                                  ...d,
+                                  likedIds: d.likedIds.includes(item.id)
+                                    ? d.likedIds.filter((id) => id !== item.id)
+                                    : [...d.likedIds, item.id],
+                                }),
+                              },
                             ),
-                          ),
-                        )
-                      }
-                      comment={
-                        data.evaluations.find((e) => e.requestId === item.id)
-                          ?.comment ?? ""
-                      }
-                    />
-                  ) : (
-                    <ProductCard
-                      key={item.id}
-                      request={item}
-                      author={data.profiles.find((p) => p.id === item.authorId)}
-                      evaluation={data.evaluations.find(
-                        (e) => e.requestId === item.id,
-                      )}
-                      liked={data.likedIds.includes(item.id)}
-                      own={data.viewer?.id === item.authorId}
-                      now={now}
-                      pending={pending}
-                      onHeart={() =>
-                        gate(() =>
-                          run(
-                            () =>
-                              actions.toggleRequestHeart(
-                                item.id,
-                                data.creator.id,
-                              ),
-                            {
-                              optimistic: (d) => ({
-                                ...d,
-                                likedIds: d.likedIds.includes(item.id)
-                                  ? d.likedIds.filter((id) => id !== item.id)
-                                  : [...d.likedIds, item.id],
-                              }),
-                            },
-                          ),
-                        )
-                      }
-                      onEvaluate={(decision) => evaluate(item, decision)}
-                      onEdit={() =>
-                        gate(
-                          () => setModal({ type: "write", edit: item }),
-                          "post",
-                        )
-                      }
-                      onDelete={() =>
-                        gate(
-                          () => setModal({ type: "delete", request: item }),
-                          "post",
-                        )
-                      }
-                      onDetail={() =>
-                        setModal({ type: "detail", request: item })
-                      }
-                    />
-                  ),
-                )}
+                          )
+                        }
+                        onEvaluate={(decision) => evaluate(item, decision)}
+                        onEdit={() =>
+                          gate(
+                            () => setModal({ type: "write", edit: item }),
+                            "post",
+                          )
+                        }
+                        onDelete={() =>
+                          gate(
+                            () => setModal({ type: "delete", request: item }),
+                            "post",
+                          )
+                        }
+                        onDetail={() => openDetail(item)}
+                      />
+                    ))}
               </div>
-              {list.length === 0 && (
+              {(view === "shop" ? recommendations.length : list.length) ===
+                0 && (
                 <div className={s.empty}>
                   <Icon name={view === "shop" ? "bag" : "grid"} size={34} />
                   <h3>
@@ -804,7 +801,7 @@ export function CreatorWorkspace({ initial }: { initial: Snapshot }) {
                   </h3>
                   <p>
                     {view === "shop"
-                      ? "BUY 판정이 완료된 상품이 자동으로 모입니다."
+                      ? "이 카테고리에 등록된 추천 상품이 없어요."
                       : "다른 카테고리를 확인하거나 첫 고민을 남겨 보세요."}
                   </p>
                   <button
@@ -814,26 +811,15 @@ export function CreatorWorkspace({ initial }: { initial: Snapshot }) {
                       query({ category: "전체", status: "ING", view: "room" })
                     }
                   >
-                    전체 고민 보기 ↗
+                    전체 고민 보기
                   </button>
                 </div>
               )}
             </>
           )}
         </div>
-        <div className={s.bottomNote}>
-          <span>YOUR TASTE MATTERS.</span>
-          <p>좋은 선택은, 좋은 질문에서 시작되니까.</p>
-          <button type="button" onClick={apply}>
-            당신의 큐레이션 룸을 열어보세요 <Icon name="arrow" size={17} />
-          </button>
-        </div>
       </main>
-      <footer className={s.footer}>
-        <span className={s.footerLogo}>BUY OR NOT.</span>
-        <span>취향을 나누는 가장 가벼운 방법.</span>
-        <span>YOUR TASTE, YOUR CHOICE</span>
-      </footer>
+
       {toast && (
         <div
           role={toast.error ? "alert" : "status"}
@@ -881,13 +867,6 @@ export function CreatorWorkspace({ initial }: { initial: Snapshot }) {
           onSubmit={saveRequest}
         />
       )}
-      {modal?.type === "apply" && (
-        <ApplicationForm
-          busy={pending}
-          onClose={() => setModal(null)}
-          onSubmit={submitApplication}
-        />
-      )}
       {modal?.type === "evaluate" && (
         <Modal
           title={modal.decision === "BUY" ? "이 상품, BUY!" : "이 상품은, NOT."}
@@ -905,9 +884,21 @@ export function CreatorWorkspace({ initial }: { initial: Snapshot }) {
           </div>
           <p className={s.modalIntro}>{modal.request.concern}</p>
           <form className={s.form} onSubmit={submitEvaluation}>
-            <label>
-              선택의 이유를 한 줄로 <small>선택</small>
+            <div className={s.decisionFields}>
+              <div className={s.decisionFieldHeading}>
+                <label htmlFor="decision-comment">선택의 이유를 한 줄로</label>
+                <label className={s.holdCheckbox}>
+                  <input
+                    type="checkbox"
+                    checked={hold}
+                    onChange={(event) => setHold(event.target.checked)}
+                  />
+                  보류
+                </label>
+              </div>
               <textarea
+                id="decision-comment"
+                disabled={hold}
                 maxLength={150}
                 rows={3}
                 value={comment}
@@ -915,19 +906,23 @@ export function CreatorWorkspace({ initial }: { initial: Snapshot }) {
                 placeholder="핏이나 활용도에 대한 한 줄을 남겨 주세요."
               />
               <span className={s.counter}>{comment.length} / 150</span>
-            </label>
+            </div>
             <p className={s.help}>
-              판정 후에는 변경할 수 없습니다. BUY는 추천 숍과 피드에, NOT은
-              피드에 자동 반영됩니다.
+              {hold
+                ? "보류한 고민은 보류 탭에서 다시 판정할 수 있어요."
+                : "판정은 피드에 반영되며 등록 후 변경할 수 없습니다."}
             </p>
             <button
               type="submit"
               className={
-                modal.decision === "BUY" ? s.primaryButton : s.blackButton
+                hold || modal.decision === "BUY"
+                  ? s.primaryButton
+                  : s.blackButton
               }
               disabled={pending}
             >
-              {modal.decision} 판정 남기기 <Icon name="check" size={18} />
+              {hold ? "보류하기" : `${modal.decision} 판정 남기기`}{" "}
+              <Icon name="check" size={18} />
             </button>
           </form>
         </Modal>
@@ -939,8 +934,8 @@ export function CreatorWorkspace({ initial }: { initial: Snapshot }) {
           busy={pending}
         >
           <p className={s.modalIntro}>
-            {modal.request.product.name}에 남긴 고민과 연결된 판정·추천 숍
-            항목이 삭제됩니다. 되돌릴 수 없습니다.
+            {modal.request.product.name}에 남긴 고민과 판정이 삭제됩니다. 되돌릴
+            수 없습니다.
           </p>
           <div className={s.modalActions}>
             <button
@@ -971,53 +966,24 @@ export function CreatorWorkspace({ initial }: { initial: Snapshot }) {
           </div>
         </Modal>
       )}
-      {modal?.type === "detail" && (
-        <Modal title="살말 고민 자세히 보기" onClose={() => setModal(null)}>
-          <span className={s.miniLabel}>{modal.request.product.brand}</span>
-          <h3>{modal.request.product.name}</h3>
-          <p className={s.modalIntro}>{modal.request.concern}</p>
-          <div className={s.cardTags}>
-            {modal.request.tags.map((tag) => (
-              <span key={tag}>#{tag}</span>
-            ))}
-          </div>
-          <dl className={s.specDetails}>
-            {Object.entries(modal.request.bodySpec).map(([key, value]) => (
-              <div key={key}>
-                <dt>
-                  {
-                    {
-                      age: "나이",
-                      height_cm: "키 (cm)",
-                      weight_kg: "몸무게 (kg)",
-                      body_type: "체형",
-                      personal_color: "퍼스널컬러",
-                    }[key]
-                  }
-                </dt>
-                <dd>{value}</dd>
-              </div>
-            ))}
-          </dl>
-          {Object.keys(modal.request.bodySpec).length === 0 && (
-            <p className={s.help}>작성자가 공개한 신체 정보가 없습니다.</p>
+      {detailRequest && (
+        <RequestDetail
+          request={detailRequest}
+          evaluation={data.evaluations.find(
+            (evaluation) => evaluation.requestId === detailRequest.id,
           )}
-          <p className={s.help}>
-            {modal.request.status === "ING"
-              ? `응답 대기 · ${daysRemaining(modal.request, now)}일 뒤 만료`
-              : modal.request.status === "EXPIRED"
-                ? "만료 / 미투표"
-                : `${modal.request.status} 판정 완료`}
-          </p>
-          <a
-            className={s.primaryButton}
-            href={getAffiliateLink(modal.request.product.url)}
-            target="_blank"
-            rel="noopener noreferrer sponsored"
-          >
-            쇼핑몰에서 보기 ↗
-          </a>
-        </Modal>
+          now={now}
+          onClose={() => {
+            setModal(null);
+            if (requestId) {
+              const search = new URLSearchParams(params);
+              search.delete("request");
+              router.replace(search.size ? `${pathname}?${search}` : pathname, {
+                scroll: false,
+              });
+            }
+          }}
+        />
       )}
       {modal?.type === "reject" && (
         <Modal
@@ -1056,95 +1022,6 @@ export function CreatorWorkspace({ initial }: { initial: Snapshot }) {
           </form>
         </Modal>
       )}
-      {modal?.type === "applicationStatus" && data.ownApplication && (
-        <Modal title="내 룸 개설 신청" onClose={() => setModal(null)}>
-          <span className={s.miniLabel}>{data.ownApplication.status}</span>
-          <h3>{data.ownApplication.roomTitle}</h3>
-          <p className={s.modalIntro}>
-            {data.ownApplication.status === "PENDING"
-              ? "신청이 접수되어 검토 중입니다. 검토 결과는 신청 내역에서 확인해 주세요."
-              : data.ownApplication.status === "APPROVED"
-                ? "개설이 승인됐어요! 크리에이터 권한과 공식 인증 뱃지가 부여되었습니다."
-                : `반려 사유: ${data.ownApplication.rejectReason}`}
-          </p>
-          {data.ownApplication.status === "APPROVED" && (
-            <Link
-              className={s.primaryButton}
-              href={`/creators/room-${data.ownApplication.id}`}
-            >
-              내 큐레이션 룸 보기 ↗
-            </Link>
-          )}
-          {data.ownApplication.status === "REJECTED" && (
-            <button
-              type="button"
-              className={s.primaryButton}
-              onClick={() => setModal({ type: "apply" })}
-            >
-              보완 후 다시 신청하기
-            </button>
-          )}
-        </Modal>
-      )}
     </div>
-  );
-}
-function ShopCard({
-  item,
-  comment,
-  liked,
-  pending,
-  onHeart,
-}: {
-  item: CurationRequest;
-  comment: string;
-  liked: boolean;
-  pending: boolean;
-  onHeart: () => void;
-}) {
-  return (
-    <article className={s.shopCard}>
-      <div className={s.shopVisual}>
-        <a
-          href={getAffiliateLink(item.product.url)}
-          target="_blank"
-          rel="noopener noreferrer sponsored"
-          aria-label={`${item.product.name} 외부 쇼핑몰에서 보기`}
-        >
-          {item.product.image ? (
-            <SamplePhoto source={item.product.image} alt={item.product.name} />
-          ) : (
-            <div className={s.imageFallback}>
-              <Icon name="bag" size={40} />
-            </div>
-          )}
-        </a>
-        <span className={s.shopBadge}>O BUY PICK</span>
-        <button
-          type="button"
-          className={`${s.shopHeart} ${liked ? s.liked : ""}`}
-          aria-label={`${item.product.name} ${liked ? "찜 취소" : "찜하기"}`}
-          aria-pressed={liked}
-          disabled={pending}
-          onClick={onHeart}
-        >
-          <Icon name="heart" size={18} filled={liked} />
-        </button>
-      </div>
-      <p className={s.shopBrand}>{item.product.brand}</p>
-      <h3>
-        <a
-          href={getAffiliateLink(item.product.url)}
-          target="_blank"
-          rel="noopener noreferrer sponsored"
-        >
-          {item.product.name} ↗
-        </a>
-      </h3>
-      <ProductPrice product={item.product} />
-      <p className={s.shopComment}>
-        “{comment || "크리에이터가 추천하는 선택이에요."}”
-      </p>
-    </article>
   );
 }

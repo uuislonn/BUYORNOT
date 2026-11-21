@@ -7,11 +7,14 @@ import type {
 } from "../_lib/types";
 import { daysRemaining } from "../_lib/policy";
 import { getAffiliateLink } from "../_lib/product-url";
-import { ProductPrice } from "./product-price";
+import { ProductCardLayout } from "./product-card-layout";
+import { CommentButton } from "./comment-button";
+import { SaveHeart } from "./save-heart";
 import { Icon } from "./icons";
 import { SamplePhoto } from "./sample-photo";
 import s from "./creator.module.css";
 export function ProductCard({
+  canEvaluate = false,
   request,
   author,
   evaluation,
@@ -25,6 +28,7 @@ export function ProductCard({
   onDelete,
   onDetail,
 }: {
+  canEvaluate?: boolean;
   request: CurationRequest;
   author?: Profile;
   evaluation?: Evaluation;
@@ -40,107 +44,89 @@ export function ProductCard({
 }) {
   const remaining = daysRemaining(request, now);
   return (
-    <article className={s.card} data-request-id={request.id}>
-      <div className={s.cardTop}>
-        <span className={s.smallAvatar}>
-          {author?.nickname.slice(0, 1) ?? "?"}
-        </span>
-        <span className={s.authorName}>{author?.nickname ?? "회원"}</span>
+    <ProductCardLayout
+      requestId={request.id}
+      author={author?.nickname ?? "회원"}
+      product={{
+        ...request.product,
+        url: getAffiliateLink(request.product.url),
+      }}
+      image={
+        request.product.image ? (
+          <SamplePhoto
+            key={request.product.image}
+            source={request.product.image}
+            fit="cover"
+            alt={request.product.name}
+          />
+        ) : (
+          <div className={s.imageFallback}>
+            <Icon name="bag" size={48} />
+            <small>상품 이미지 준비 중</small>
+          </div>
+        )
+      }
+      actions={
+        <SaveHeart
+          name={request.product.name}
+          liked={liked}
+          pending={pending}
+          onClick={onHeart}
+        />
+      }
+      commentAction={<CommentButton onClick={onDetail} />}
+      concern={request.concern}
+      category={request.product.category}
+      tags={request.tags}
+    >
+      {evaluation && (
+        <div className={s.evaluation}>
+          <span className={evaluation.decision === "BUY" ? s.blueText : ""}>
+            {evaluation.decision === "BUY" ? "O BUY" : "× NOT"}
+          </span>
+          <p>{evaluation.comment || "크리에이터가 판정을 남겼어요."}</p>
+        </div>
+      )}
+      <div className={s.cardMeta}>
         <span
           className={`${s.statusPill} ${request.status === "BUY" ? s.bluePill : ""}`}
         >
           {request.status === "EXPIRED"
             ? "만료 / 미투표"
             : request.status === "ING"
-              ? "답변 기다리는 중"
+              ? canEvaluate && request.held
+                ? "보류"
+                : "답변 기다리는 중"
               : request.status}
         </span>
-        <button
-          type="button"
-          className={`${s.iconButton} ${liked ? s.liked : ""}`}
-          aria-label={`${request.product.name} ${liked ? "찜 취소" : "찜하기"}`}
-          aria-pressed={liked}
-          disabled={pending}
-          onClick={onHeart}
-        >
-          <Icon name="heart" size={18} filled={liked} />
-        </button>
-      </div>
-      <a
-        className={s.productVisual}
-        href={getAffiliateLink(request.product.url)}
-        target="_blank"
-        rel="noopener noreferrer sponsored"
-        aria-label={`${request.product.name} 외부 쇼핑몰에서 보기`}
-      >
-        {request.product.image ? (
-          <SamplePhoto
-            key={request.product.image}
-            source={request.product.image}
-            alt={request.product.name}
-          />
-        ) : (
-          <div className={s.imageFallback}>
-            <Icon name="bag" size={48} />
-            <span>{request.product.name}</span>
-            <small>상품 이미지 준비 중</small>
-          </div>
-        )}
-        <span className={s.imageCategory}>{request.product.category}</span>
-        <span className={s.productOverlay}>
-          <span>{request.product.name}</span>
-          <ProductPrice product={request.product} />
+        <span>
+          {new Intl.DateTimeFormat("ko-KR", {
+            month: "numeric",
+            day: "numeric",
+            timeZone: "Asia/Seoul",
+          }).format(new Date(request.createdAt))}
         </span>
-        <span className={s.imageArrow} aria-hidden="true">
-          ↗
-        </span>
-      </a>
-      <div className={s.cardBody}>
-        <p className={s.concern}>{request.concern}</p>
-        <div className={s.cardTags}>
-          {request.tags.map((tag) => (
-            <span key={tag}>#{tag}</span>
-          ))}
-        </div>
-        {evaluation && (
-          <div className={s.evaluation}>
-            <span className={evaluation.decision === "BUY" ? s.blueText : ""}>
-              {evaluation.decision === "BUY" ? "O BUY" : "× NOT"}
-            </span>
-            <p>{evaluation.comment || "크리에이터가 판정을 남겼어요."}</p>
-          </div>
-        )}
-        <div className={s.cardMeta}>
-          <button type="button" className={s.textButton} onClick={onDetail}>
-            고민 상세 <span aria-hidden="true">↗</span>
-          </button>
-          <span>
-            {new Intl.DateTimeFormat("ko-KR", {
-              month: "numeric",
-              day: "numeric",
-              timeZone: "Asia/Seoul",
-            }).format(new Date(request.createdAt))}
-          </span>
-          {own && (
-            <span className={s.ownActions}>
-              {request.status === "ING" && (
-                <button type="button" disabled={pending} onClick={onEdit}>
-                  수정
-                </button>
-              )}
-              <button type="button" disabled={pending} onClick={onDelete}>
-                삭제
+        {own && (
+          <span className={s.ownActions}>
+            {request.status === "ING" && (
+              <button type="button" disabled={pending} onClick={onEdit}>
+                수정
               </button>
-            </span>
-          )}
-        </div>
-        <p className={s.requestStatus}>
-          {request.status === "ING"
-            ? `응답 대기 · ${remaining}일 뒤 만료`
-            : request.status === "EXPIRED"
-              ? "30일 경과 · 미답변 만료"
-              : "크리에이터 판정 완료 · 일반 투표가 아닙니다"}
-        </p>
+            )}
+            <button type="button" disabled={pending} onClick={onDelete}>
+              삭제
+            </button>
+          </span>
+        )}
+      </div>
+      <p className={s.requestStatus}>
+        {request.status === "ING"
+          ? `응답 대기 · ${remaining}일 뒤 만료`
+          : request.status === "EXPIRED"
+            ? "30일 경과 · 미답변 만료"
+            : "크리에이터 판정 완료 · 일반 투표가 아닙니다"}
+      </p>
+      {canEvaluate && (
         <div className={s.verdictButtons}>
           <button
             type="button"
@@ -161,7 +147,7 @@ export function ProductCard({
             Don&apos;t buy <span aria-hidden="true">×</span>
           </button>
         </div>
-      </div>
-    </article>
+      )}
+    </ProductCardLayout>
   );
 }

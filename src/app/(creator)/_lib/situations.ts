@@ -58,21 +58,6 @@ export const SITUATIONS: Record<
       "선물",
     ],
   },
-  명품: {
-    prompt: "어떤 기준으로 고르고 있나요?",
-    placeholder:
-      "사용할 자리, 활용도, 예산, 오래 쓸 디자인… 고민을 자유롭게 남겨 주세요.",
-    tags: [
-      "데일리",
-      "출근",
-      "격식있는자리",
-      "기념일",
-      "선물",
-      "첫명품",
-      "오래쓸디자인",
-      "활용도",
-    ],
-  },
 };
 export function retainSituationTags(
   tags: readonly string[],

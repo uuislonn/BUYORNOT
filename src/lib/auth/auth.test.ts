@@ -9,11 +9,24 @@ const mocks = vi.hoisted(() => ({
     signOut: vi.fn(),
   },
   from: vi.fn(),
+  rpc: vi.fn(),
   currentUser: vi.fn(),
   remove: vi.fn(),
+  previewLogin: vi.fn(),
+  resolveUsername: vi.fn(),
+}));
+vi.mock("../../features/community/actions", () => ({
+  loginPreview: mocks.previewLogin,
+}));
+vi.mock("./username-server", () => ({
+  resolveUsername: mocks.resolveUsername,
 }));
 vi.mock("./server", () => ({
-  authClient: async () => ({ auth: mocks.auth, from: mocks.from }),
+  authClient: async () => ({
+    auth: mocks.auth,
+    from: mocks.from,
+    rpc: mocks.rpc,
+  }),
   currentUser: mocks.currentUser,
 }));
 vi.mock("next/headers", () => ({
@@ -25,7 +38,12 @@ vi.mock("next/navigation", () => ({
     throw new Error(`REDIRECT:${url}`);
   },
 }));
-import { submitAuth, kakaoLogin, logout } from "../../app/(auth)/actions";
+import {
+  submitAuth,
+  kakaoLogin,
+  logout,
+  checkUsername,
+} from "../../app/(auth)/actions";
 import {
   demoEnabled,
   readRoomSnapshot,
@@ -39,6 +57,7 @@ function form(values: Record<string, string> = {}) {
     password: "password1234",
     confirm: "password1234",
     nickname: "테스트",
+    username: "member_1",
     ...values,
   }))
     data.set(key, value);
@@ -46,6 +65,7 @@ function form(values: Record<string, string> = {}) {
 }
 beforeEach(() => {
   vi.resetAllMocks();
+  mocks.rpc.mockResolvedValue({ data: true, error: null });
   const query = {
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
@@ -59,7 +79,75 @@ beforeEach(() => {
   vi.stubEnv("NEXT_PUBLIC_SITE_URL", "http://localhost:3000");
 });
 afterEach(() => vi.unstubAllEnvs());
+describe("아이디 중복 확인", () => {
+  it("닉네임은 2~15자를 허용하고 범위를 벗어나면 가입을 차단한다", async () => {
+    for (const nickname of ["가", "가".repeat(16)]) {
+      expect(
+        (await submitAuth("signup", form({ nickname }))).message,
+      ).toContain("2~15자");
+    }
+    expect(mocks.auth.signUp).not.toHaveBeenCalled();
+  });
+  it("아이디를 서버에서 이메일로 변환한 뒤 비밀번호로 로그인한다", async () => {
+    mocks.resolveUsername.mockResolvedValue("member@example.com");
+    mocks.auth.signInWithPassword.mockResolvedValue({ error: null });
+    await expect(
+      submitAuth("login", form({ email: " Member_1 " })),
+    ).rejects.toThrow("REDIRECT:/account");
+    expect(mocks.resolveUsername).toHaveBeenCalledWith("member_1");
+    expect(mocks.auth.signInWithPassword).toHaveBeenCalledWith({
+      email: "member@example.com",
+      password: "password1234",
+    });
+  });
+  it("없는 아이디로는 비밀번호 인증을 요청하지 않는다", async () => {
+    mocks.resolveUsername.mockResolvedValue(null);
+    expect(
+      (await submitAuth("login", form({ email: "missing_user" }))).message,
+    ).toContain("아이디 또는 비밀번호");
+    expect(mocks.auth.signInWithPassword).not.toHaveBeenCalled();
+  });
+  it("이메일 로그인은 아이디 조회 없이 기존 인증을 사용한다", async () => {
+    mocks.auth.signInWithPassword.mockResolvedValue({ error: null });
+    await expect(submitAuth("login", form())).rejects.toThrow(
+      "REDIRECT:/account",
+    );
+    expect(mocks.resolveUsername).not.toHaveBeenCalled();
+  });
+  it("실제 조회 결과에 따라 사용 가능과 중복을 구분한다", async () => {
+    expect((await checkUsername(" Member_1 ")).status).toBe("available");
+    expect(mocks.rpc).toHaveBeenCalledWith("username_available", {
+      candidate: "Member_1",
+    });
+    mocks.rpc.mockResolvedValue({ data: false, error: null });
+    expect((await checkUsername("member_1")).status).toBe("duplicate");
+  });
+  it("조회 실패를 사용 가능으로 표시하지 않는다", async () => {
+    mocks.rpc.mockResolvedValue({ data: null, error: { code: "42883" } });
+    expect((await checkUsername("member_1")).status).toBe("error");
+  });
+  it("유효하지 않은 닉네임은 조회하지 않는다", async () => {
+    expect((await checkUsername(" ")).status).toBe("error");
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+  it("가입 시 서버에서 다시 확인하여 중복 계정 생성을 차단한다", async () => {
+    mocks.rpc.mockResolvedValue({ data: false, error: null });
+    expect((await submitAuth("signup", form())).message).toContain(
+      "이미 사용 중",
+    );
+    expect(mocks.auth.signUp).not.toHaveBeenCalled();
+  });
+});
 describe("real auth actions", () => {
+  it("never restores the removed 1111 development login", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    mocks.resolveUsername.mockResolvedValue(null);
+    expect(
+      (await submitAuth("login", form({ email: "1111", password: "1111" }))).ok,
+    ).not.toBe(true);
+    expect(mocks.previewLogin).not.toHaveBeenCalled();
+    expect(mocks.auth.signInWithPassword).not.toHaveBeenCalled();
+  });
   it("does not send users to an unconfigured Kakao provider", async () => {
     vi.stubEnv("NEXT_PUBLIC_KAKAO_AUTH_ENABLED", "false");
     expect((await kakaoLogin()).message).toContain("설정");
@@ -87,7 +175,7 @@ describe("real auth actions", () => {
       email: "member@example.com",
       password: "password1234",
       options: {
-        data: { nickname: "테스트" },
+        data: { nickname: "테스트", username: "member_1" },
         emailRedirectTo: "http://localhost:3000/auth/callback",
       },
     });

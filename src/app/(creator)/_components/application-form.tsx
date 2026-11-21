@@ -9,10 +9,12 @@ export function ApplicationForm({
   busy,
   onClose,
   onSubmit,
+  serverError,
 }: {
   busy: boolean;
   onClose: () => void;
   onSubmit: (input: ApplicationInput) => void;
+  serverError?: string;
 }) {
   const [step, setStep] = useState(1);
   const [input, setInput] = useState<ApplicationInput>({
@@ -250,9 +252,9 @@ export function ApplicationForm({
             </p>
           </>
         )}
-        {error && (
+        {(error || serverError) && (
           <p role="alert" className={s.error}>
-            {error}
+            {error || serverError}
           </p>
         )}
         <div className={s.modalActions}>
@@ -276,7 +278,6 @@ export function ApplicationForm({
               : step === 3
                 ? "개설 신청하기"
                 : "다음 단계"}
-            <span aria-hidden="true">↗</span>
           </button>
         </div>
       </form>

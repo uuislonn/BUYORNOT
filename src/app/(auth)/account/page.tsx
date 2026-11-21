@@ -1,3 +1,4 @@
+import { addDirectoryRooms } from "../../(creator)/_server/directory";
 import { localAccountActivity } from "./local-activity";
 import { store as communityStore } from "../../../features/community/store";
 import {
@@ -15,12 +16,24 @@ import {
 import type { Database } from "../../(creator)/_lib/types";
 import { accountServerTime } from "./server-time";
 import { MyPage } from "./my-page";
+function savedCommunityProducts(profile: { id: string; nickname: string }) {
+  const saved = new Set(communityStore.savedIds(profile));
+  return communityStore.list(profile).filter((post) => saved.has(post.id));
+}
+
 export const metadata = { title: "마이페이지 · BUYORNOT" };
 export default async function AccountPage() {
   const local = await localTestProfile();
   if (local) {
-    const db = localTestDatabase();
-    const activity = localAccountActivity(local);
+    const db = addDirectoryRooms(localTestDatabase());
+    const examples = localAccountActivity(local);
+    const savedProducts = savedCommunityProducts(local);
+    const activity = {
+      savedPosts: examples?.savedPosts ?? [],
+      savedProducts,
+      comments: examples?.comments ?? [],
+      notifications: examples?.notifications ?? [],
+    };
     return (
       <MyPage
         activity={activity}
@@ -80,6 +93,12 @@ export default async function AccountPage() {
   const provider = user.app_metadata.provider === "kakao" ? "카카오" : "이메일";
   return (
     <MyPage
+      activity={{
+        savedPosts: [],
+        savedProducts: savedCommunityProducts(profile),
+        comments: [],
+        notifications: [],
+      }}
       key={user.id}
       nickname={profile.nickname}
       accountRole={profile.role === "CREATOR" ? "CREATOR" : "USER"}

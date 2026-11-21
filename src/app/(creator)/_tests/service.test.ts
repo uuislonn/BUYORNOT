@@ -201,6 +201,26 @@ describe("request validation and expiry", () => {
   });
 });
 describe("creator decisions", () => {
+  it("holds a pending request without a verdict and allows the owner to decide later", () => {
+    errorCode(
+      () => service.holdRequest(db, "member", "req-1", NOW),
+      "FORBIDDEN",
+    );
+    service.holdRequest(db, "creator", "req-1", NOW);
+    const held = db.requests.find((request) => request.id === "req-1");
+    expect(held).toMatchObject({ held: true, status: "ING" });
+    expect(
+      db.evaluations.some((evaluation) => evaluation.requestId === "req-1"),
+    ).toBe(false);
+    service.evaluateRequest(db, "creator", "req-1", "BUY", "답변", NOW);
+    expect(held?.held).toBeUndefined();
+    expect(held?.status).toBe("BUY");
+    errorCode(
+      () => service.holdRequest(db, "creator", "req-1", NOW),
+      "CONFLICT",
+    );
+  });
+
   it.each(["member", "admin", "sample-1"])(
     "rejects non-owner identity %s",
     (actor) => {
@@ -359,5 +379,62 @@ describe("creator applications", () => {
     expect(
       service.snapshot(db, "admin", "seoa", true, NOW).applications,
     ).toHaveLength(1);
+  });
+});
+
+describe("creator room management", () => {
+  it("allows only the room owner to update public room information", () => {
+    const owner = db.creators[0].ownerId;
+    service.updateRoom(db, owner, "seoa", {
+      title: "새로운 취향의 룸",
+      bio: "매일 손이 가는 제품을 함께 골라요.",
+    });
+    expect(db.creators[0].title).toBe("새로운 취향의 룸");
+    expect(db.creators[0].bio).toBe("매일 손이 가는 제품을 함께 골라요.");
+    errorCode(
+      () =>
+        service.updateRoom(db, null, "seoa", {
+          title: "다른 룸",
+          bio: "다른 소개",
+        }),
+      "UNAUTHENTICATED",
+    );
+    const member = db.profiles.find((profile) => profile.role === "USER")!;
+    errorCode(
+      () =>
+        service.updateRoom(db, member.id, "seoa", {
+          title: "다른 룸",
+          bio: "다른 소개",
+        }),
+      "FORBIDDEN",
+    );
+    db.profiles.push({
+      id: "another-creator",
+      nickname: "다른 크리에이터",
+      role: "CREATOR",
+      avatar: "",
+      verified: false,
+    });
+    errorCode(
+      () =>
+        service.updateRoom(db, "another-creator", "seoa", {
+          title: "다른 룸",
+          bio: "다른 소개",
+        }),
+      "FORBIDDEN",
+    );
+    expect(db.creators[0].title).toBe("새로운 취향의 룸");
+  });
+  it("validates all room fields before changing any data", () => {
+    const original = { ...db.creators[0] };
+    errorCode(
+      () =>
+        service.updateRoom(db, original.ownerId, "seoa", {
+          title: "변경할 이름",
+          bio: "",
+        }),
+      "VALIDATION",
+    );
+    expect(db.creators[0]).toEqual(original);
   });
 });

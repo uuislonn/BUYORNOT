@@ -40,16 +40,10 @@
 .dot {
   color: #416cdb;
 }
-.back {
-  font-size: 13px;
-  font-weight: 500;
-}
-.back span {
-  margin-left: 14px;
-}
 .main {
-  max-width: 1224px;
+  max-width: none;
   margin: 20px auto 40px;
+  width: calc(100% - 2 * var(--page-gutter));
   padding: 0;
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -178,6 +172,37 @@
 }
 .password {
   position: relative;
+}
+.usernameRow {
+  display: flex;
+  gap: 8px;
+}
+.usernameRow input {
+  min-width: 0;
+  flex: 1;
+}
+.usernameCheck {
+  border: 1px solid #dde0e7;
+  border-radius: 7px;
+  background: #f4f6fb;
+  padding: 0 10px;
+  white-space: nowrap;
+  font-size: 12px !important;
+}
+.usernameCheck:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.usernameAvailable,
+.usernameError {
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+.usernameAvailable {
+  color: #18743b;
+}
+.usernameError {
+  color: #c32c32;
 }
 .password input {
   padding-right: 50px;
@@ -308,7 +333,7 @@
 }
 @media (max-width: 900px) {
   .main {
-    margin: 12px 24px 30px;
+    margin-block: 12px 30px;
   }
   .story {
     padding: 42px 30px;
@@ -338,8 +363,7 @@
     display: block;
     min-height: 0;
     margin: 0 auto;
-    padding: 25px 24px 45px;
-    max-width: 460px;
+    padding: 25px 0 45px;
   }
   .story {
     display: none;

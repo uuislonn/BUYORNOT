@@ -25,3 +25,29 @@ export function meetsFastTrack(
 ): boolean {
   return application.followers >= 500 && application.contentCount >= 10;
 }
+
+export function compareRoomRequests(
+  a: CurationRequest,
+  b: CurationRequest,
+  sort: "latest" | "oldest" | "views",
+  date: "createdAt" | "updatedAt",
+): number {
+  if (sort === "views") {
+    const views = (b.views ?? 0) - (a.views ?? 0);
+    if (views) return views;
+  }
+  return sort === "oldest"
+    ? a[date].localeCompare(b[date])
+    : b[date].localeCompare(a[date]);
+}
+
+export type RoomStatus = Status | "HOLD";
+
+export function roomStatus(
+  request: CurationRequest,
+  owner: boolean,
+): RoomStatus {
+  return owner && request.status === "ING" && request.held
+    ? "HOLD"
+    : request.status;
+}

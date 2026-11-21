@@ -9,6 +9,8 @@ import { validateProductUrl } from "./product";
 import {
   categories,
   type Choice,
+  type CommentTarget,
+  type DiscussionComment,
   type FeedPost,
   type Post,
   type PostInput,
@@ -21,6 +23,9 @@ export class CommunityStore {
     seedPosts.map((p) => [p.id, structuredClone(p)]),
   );
   votes = new Map<string, Choice>();
+  private saved = new Map<string, string[]>();
+  private curationViews = new Map<string, number>();
+  private comments = new Map<string, DiscussionComment[]>();
   sessions = new Map<string, { viewer: Viewer; expires: number }>();
   private persistence?: CommunityPersistence;
   constructor(persistence?: CommunityPersistence) {
@@ -31,12 +36,11 @@ export class CommunityStore {
     if (snapshot) {
       this.posts = new Map(snapshot.posts.map((post) => [post.id, post]));
       this.votes = new Map(snapshot.votes);
+      this.saved = new Map(snapshot.saved);
+      this.comments = new Map(snapshot.comments);
+      this.curationViews = new Map(snapshot.curationViews);
     } else {
-      persistence.write({
-        version: 1,
-        posts: [...this.posts.values()],
-        votes: [...this.votes],
-      });
+      persistence.write(this.snapshot());
     }
     // Upgrade only the obsolete six-placeholder fixture set; keep authored posts and votes.
     const legacy = [...this.posts.values()].some(
@@ -63,13 +67,86 @@ export class CommunityStore {
           this.posts.set(post.id, post);
         }
       }
-      persistence.write({
-        version: 1,
-        posts: [...this.posts.values()],
-        votes: [...this.votes],
-      });
     }
+    let refreshed = false;
+    for (const seed of seedPosts) {
+      const post = this.posts.get(seed.id);
+      if (
+        !post ||
+        post.deletedAt ||
+        post.authorId !== seed.authorId ||
+        post.product.url !== seed.product.url ||
+        post.createdAt !== seed.createdAt ||
+        post.updatedAt !== post.createdAt
+      )
+        continue;
+      if (
+        post.concern === seed.concern &&
+        JSON.stringify(post.bodyProfile) === JSON.stringify(seed.bodyProfile)
+      )
+        continue;
+      this.posts.set(post.id, {
+        ...post,
+        concern: seed.concern,
+        bodyProfile: { ...seed.bodyProfile },
+      });
+      refreshed = true;
+    }
+    if (legacy || refreshed) persistence.write(this.snapshot());
     this.persistence = persistence;
+  }
+  snapshot() {
+    return {
+      version: 1 as const,
+      posts: [...this.posts.values()],
+      votes: [...this.votes],
+      saved: [...this.saved],
+      comments: [...this.comments],
+      curationViews: [...this.curationViews],
+    };
+  }
+  savedIds(viewer: Viewer | null) {
+    return viewer ? [...(this.saved.get(viewer.id) ?? [])] : [];
+  }
+  saveProduct(id: string, saved: boolean, viewer: Viewer | null) {
+    const user = this.require(viewer);
+    this.detail(id, user);
+    const ids = new Set(this.savedIds(user));
+    if (saved) ids.add(id);
+    else ids.delete(id);
+    this.change(() => this.saved.set(user.id, [...ids]));
+    return ids.has(id);
+  }
+  curationViewCount(roomId: string, postId: string) {
+    return this.curationViews.get(JSON.stringify([roomId, postId])) ?? 0;
+  }
+  recordCurationView(roomId: string, postId: string) {
+    const key = JSON.stringify([roomId, postId]);
+    const count = this.curationViewCount(roomId, postId) + 1;
+    this.change(() => this.curationViews.set(key, count));
+    return count;
+  }
+  listComments(target: CommentTarget) {
+    return [...(this.comments.get(JSON.stringify(target)) ?? [])];
+  }
+  addComment(target: CommentTarget, body: string, viewer: Viewer | null) {
+    const user = this.require(viewer);
+    const text = typeof body === "string" ? body.trim() : "";
+    if (!text || text.length > 500)
+      throw new Error("댓글을 1~500자로 입력해 주세요.");
+    const comment = {
+      id: randomUUID(),
+      nickname: user.nickname,
+      body: text,
+      createdAt: new Date().toISOString(),
+    };
+    this.change(() =>
+      this.comments.set(JSON.stringify(target), [
+        ...this.listComments(target),
+        comment,
+      ]),
+    );
+    return comment;
   }
   private change(mutate: () => void) {
     const previous = this.persistence
@@ -77,20 +154,22 @@ export class CommunityStore {
           posts: this.posts,
           votes: this.votes,
           sessions: this.sessions,
+          saved: this.saved,
+          comments: this.comments,
+          curationViews: this.curationViews,
         })
       : null;
     try {
       mutate();
-      this.persistence?.write({
-        version: 1,
-        posts: [...this.posts.values()],
-        votes: [...this.votes],
-      });
+      this.persistence?.write(this.snapshot());
     } catch (error) {
       if (previous) {
         this.posts = previous.posts;
         this.votes = previous.votes;
         this.sessions = previous.sessions;
+        this.saved = previous.saved;
+        this.comments = previous.comments;
+        this.curationViews = previous.curationViews;
       }
       throw error;
     }
@@ -131,11 +210,20 @@ export class CommunityStore {
       .filter((p) => this.canRead(p, viewer))
       .map((p) => this.detail(p.id, viewer));
   }
+  open(id: string, viewer: Viewer | null): FeedPost {
+    this.detail(id, viewer);
+    this.change(() => {
+      const post = this.posts.get(id)!;
+      post.views = (post.views ?? 0) + 1;
+    });
+    return this.detail(id, viewer);
+  }
   save(
     input: PostInput,
     viewer: Viewer | null,
     id?: string,
     resolvedProduct?: Product,
+    disclosedBodyType?: string,
   ): FeedPost {
     const user = this.require(viewer);
     const previous = id ? this.detail(id, viewer) : null;
@@ -163,11 +251,20 @@ export class CommunityStore {
         bodyProfile[key] = value;
       }
     }
+    if (disclosedBodyType !== undefined) {
+      if (
+        typeof disclosedBodyType !== "string" ||
+        disclosedBodyType.trim().length > 30
+      )
+        throw new Error("체형 정보를 확인해 주세요.");
+      if (disclosedBodyType.trim())
+        bodyProfile.body_type = disclosedBodyType.trim();
+    }
     const url = validateProductUrl(input.productUrl);
     const product =
       resolvedProduct ??
       (previous?.product.url === url.href ? previous.product : null);
-    if (!product || !product.name || !product.image || product.price <= 0)
+    if (!product || !product.name || !product.image || product.price < 0)
       throw new Error("상품 정보를 먼저 불러와 주세요.");
     if (product.url !== url.href || product.domain !== url.hostname)
       throw new Error("상품 링크와 불러온 정보가 일치하지 않습니다.");
@@ -180,11 +277,13 @@ export class CommunityStore {
       category: input.category,
       visibility: input.visibility,
       bodyProfile,
+      tags: input.tags,
       createdAt: previous?.createdAt ?? new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       deletedAt: null,
       buy: previous?.buy ?? 0,
       not: previous?.not ?? 0,
+      views: previous?.views ?? 0,
     };
     this.change(() => {
       this.posts.set(post.id, post);

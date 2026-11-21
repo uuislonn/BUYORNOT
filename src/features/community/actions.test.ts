@@ -50,7 +50,7 @@ beforeEach(() => {
 
 describe("실제 상품 정보 연결", () => {
   const product = {
-    url: "https://www.musinsa.com/products/7096804",
+    url: "https://www.musinsa.com/products/90001234",
     domain: "www.musinsa.com",
     name: "95 바시티 후드 가디건-네이비",
     brand: "비터셀즈",
@@ -63,7 +63,7 @@ describe("실제 상품 정보 연결", () => {
     vi.mocked(loadProduct).mockResolvedValue(product);
     expect(await getProductInfo(product.url)).toEqual({
       ok: true,
-      data: product,
+      data: { ...product, duplicateId: null },
     });
     await loginPreview("member-id", "member-password");
     const result = await savePost({
@@ -79,6 +79,14 @@ describe("실제 상품 정보 연결", () => {
       expect(store.detail(result.data.id, user).product).toEqual(product);
       store.posts.delete(result.data.id);
     }
+  });
+  it("returns the public post ID for a product already discussed", async () => {
+    const existing = store.posts.get("sample-0")!;
+    const result = await getProductInfo(
+      existing.product.url + "?utm_source=share",
+    );
+    expect(result.ok && result.data.duplicateId).toBe(existing.id);
+    expect(loadProduct).not.toHaveBeenCalled();
   });
   it("모든 사용자 계정을 구분하고 각 작성자만 자기 글을 수정·삭제한다", async () => {
     vi.stubEnv("NODE_ENV", "development");
@@ -199,4 +207,33 @@ describe("개발용 임시 로그인", () => {
     expect(result.ok && result.data.viewer).toBeNull();
     expect((await votePost("sample-0", "BUY")).ok).toBe(false);
   });
+});
+
+it("saves the shared form's selected tags and verified image without requiring a price", async () => {
+  identity.current = { id: "shared-form-member", nickname: "지혜" };
+  const input = {
+    productUrl: "https://www.musinsa.com/products/5951337",
+    concern: "주말에 입을까요?",
+    category: "의류",
+    visibility: "PUBLIC",
+    tags: ["데일리", "허용되지 않는 태그"],
+    bodyProfile: { body_type: "균형형" },
+  } as const;
+  const draft = {
+    name: "Steel Button Top (black)",
+    brand: "카키포인트",
+    image: "https://image.msscdn.net/5951337.jpg",
+    price: 0,
+  };
+  const postInput = { ...input, tags: [...input.tags] };
+  const invalid = await savePost(postInput, undefined, {
+    ...draft,
+    image: "https://example.com/photo.jpg",
+  });
+  expect(invalid.ok).toBe(false);
+  const result = await savePost(postInput, undefined, draft);
+  expect(result.ok && result.data.tags).toEqual(["데일리"]);
+  expect(result.ok && result.data.product.price).toBe(0);
+  expect(result.ok && result.data.bodyProfile.body_type).toBe("균형형");
+  if (result.ok) store.posts.delete(result.data.id);
 });

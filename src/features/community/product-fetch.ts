@@ -105,7 +105,7 @@ function readPage(
         let size = 0;
         response.on("data", (chunk: Buffer) => {
           size += chunk.length;
-          if (size > 2 * 1024 * 1024) {
+          if (size > 5 * 1024 * 1024) {
             req.destroy(
               new Error(
                 "상품 페이지가 너무 큽니다. 다른 상품 상세 링크로 시도해 주세요.",
@@ -154,9 +154,11 @@ const transport: ProductTransport = {
 export async function fetchProductHtml(
   input: string,
   client = transport,
+  validate = validateProductUrl,
+  timeoutMs = 10_000,
 ): Promise<{ html: string; url: URL }> {
-  let url = validateProductUrl(input);
-  const deadline = Date.now() + 10000;
+  let url = validate(input);
+  const deadline = Date.now() + timeoutMs;
   for (let redirects = 0; redirects <= 5; redirects++) {
     const remaining = deadline - Date.now();
     if (remaining <= 0)
@@ -193,7 +195,9 @@ export async function fetchProductHtml(
       throw new Error(
         "상품 정보 조회 시간이 초과되었습니다. 다시 시도해 주세요.",
       );
-    const page = await client.readPage(url, addresses[0], timeout);
+    const preferred =
+      addresses.find((address) => address.family === 4) ?? addresses[0];
+    const page = await client.readPage(url, preferred, timeout);
     if (page.status === 200) {
       if (url.hostname.endsWith(".onelink.me"))
         throw new Error(
@@ -205,7 +209,7 @@ export async function fetchProductHtml(
       throw new Error(
         "상품 상세 페이지를 불러오지 못했습니다. 링크를 확인해 주세요.",
       );
-    url = validateProductUrl(new URL(page.location, url).href);
+    url = validate(new URL(page.location, url).href);
   }
   throw new Error(
     "상품 링크의 이동이 너무 많습니다. 최종 상품 상세 주소를 입력해 주세요.",

@@ -1,6 +1,8 @@
+import { normalizeProductCategories } from "../_lib/product-category";
 // TODO: connect to lib/supabase — replace in-memory operations with auth-scoped transactions and RLS.
 import { randomUUID } from "node:crypto";
 import {
+  productIdentity,
   validateProductUrl,
   validateProductImageUrl,
 } from "../_lib/product-url";
@@ -115,7 +117,7 @@ function validatedInput(input: RequestInput) {
       category: input.category,
       currency: "KRW" as const,
       image: input.productImage
-        ? validateProductImageUrl(input.productImage)
+        ? validateProductImageUrl(input.productImage, url)
         : "",
     },
     concern: text(input.concern, 150, "고민"),
@@ -130,6 +132,7 @@ export function snapshot(
   demoEnabled: boolean,
   now = Date.now(),
 ): Snapshot {
+  normalizeProductCategories(db);
   expireRequests(db, now);
   const creator =
     db.creators.find((r) => r.id === creatorId) ??
@@ -170,11 +173,12 @@ export function createRequest(
   if (!db.creators.some((c) => c.id === input.creatorId))
     fail("NOT_FOUND", "룸을 찾을 수 없어요.");
   const values = validatedInput(input);
+  const identity = productIdentity(values.product.url);
   if (
     db.requests.some(
       (r) =>
         r.creatorId === input.creatorId &&
-        r.product.url === values.product.url &&
+        productIdentity(r.product.url) === identity &&
         r.status !== "EXPIRED",
     )
   )
@@ -237,14 +241,12 @@ export function deleteRequest(
   db.evaluations = db.evaluations.filter((e) => e.requestId !== id);
   delete db.hearts[id];
 }
-export function evaluateRequest(
+function pendingEvaluation(
   db: Database,
   actorId: string | null,
   id: string,
-  decision: Decision,
-  comment: string,
-  now = Date.now(),
-): void {
+  now: number,
+) {
   const actor = user(db, actorId);
   expireRequests(db, now);
   const item = request(db, id);
@@ -253,6 +255,28 @@ export function evaluateRequest(
     fail("FORBIDDEN", "이 룸의 크리에이터만 판정할 수 있어요.");
   if (item.status !== "ING" || db.evaluations.some((e) => e.requestId === id))
     fail("CONFLICT", "이미 판정되었거나 만료된 고민이에요.");
+  return { actor, item };
+}
+
+export function holdRequest(
+  db: Database,
+  actorId: string | null,
+  id: string,
+  now = Date.now(),
+) {
+  const { item } = pendingEvaluation(db, actorId, id, now);
+  item.held = true;
+}
+
+export function evaluateRequest(
+  db: Database,
+  actorId: string | null,
+  id: string,
+  decision: Decision,
+  comment: string,
+  now = Date.now(),
+): void {
+  const { actor, item } = pendingEvaluation(db, actorId, id, now);
   if (decision !== "BUY" && decision !== "NOT")
     fail("VALIDATION", "BUY 또는 NOT을 선택해 주세요.");
   const safeComment = text(comment, 150, "한 줄 코멘트", 0);
@@ -266,6 +290,7 @@ export function evaluateRequest(
     createdAt: timestamp,
   });
   item.status = decision;
+  delete item.held;
   item.updatedAt = timestamp;
 }
 export function toggleHeart(
@@ -301,8 +326,11 @@ export function submitApplication(
   now = Date.now(),
 ): string {
   const actor = user(db, actorId);
-  if (actor.role !== "USER")
-    fail("FORBIDDEN", "일반 회원만 룸 개설을 신청할 수 있어요.");
+  if (
+    actor.role !== "USER" ||
+    db.creators.some((room) => room.ownerId === actor.id)
+  )
+    fail("FORBIDDEN", "큐레이션룸이 없는 일반 회원만 개설을 신청할 수 있어요.");
   if (
     db.applications.some((a) => a.userId === actor.id && a.status === "PENDING")
   )
@@ -387,4 +415,21 @@ export function reviewApplication(
   application.status = approve ? "APPROVED" : "REJECTED";
   application.rejectReason = rejectReason;
   void now;
+}
+
+export function updateRoom(
+  db: Database,
+  actorId: string | null,
+  creatorId: string,
+  input: { title: string; bio: string },
+) {
+  const actor = user(db, actorId);
+  const room = db.creators.find((item) => item.id === creatorId);
+  if (!room) fail("NOT_FOUND", "큐레이션 룸을 찾을 수 없어요.");
+  if (actor.role !== "CREATOR" || room.ownerId !== actor.id)
+    fail("FORBIDDEN", "내 큐레이션 룸만 관리할 수 있어요.");
+  const title = text(input.title, 60, "룸 이름", 2);
+  const bio = text(input.bio, 300, "룸 소개", 2);
+  room.title = title;
+  room.bio = bio;
 }

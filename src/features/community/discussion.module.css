@@ -1,0 +1,46 @@
+.discussion {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e7e7ed;
+}
+.discussion ul {
+  padding: 0;
+  list-style: none;
+}
+.discussion li {
+  padding: 10px 0;
+  border-bottom: 1px solid #eeeef3;
+}
+.discussion li p {
+  margin: 6px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.discussion time {
+  color: #64646e;
+  font-size: 0.85em;
+}
+.discussion form {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+.discussion textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #aaaab6;
+  border-radius: 8px;
+  font: inherit;
+  resize: vertical;
+}
+.discussion button {
+  justify-self: start;
+  border: 1px solid #d7d7e3;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: #0100ca;
+  background: #f5f5ff;
+}
+.discussion button:disabled {
+  opacity: 0.55;
+}

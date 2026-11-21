@@ -217,10 +217,18 @@ try {
     0,
   );
   await tab(/^추천 숍/);
+  assert.equal(
+    await page
+      .getByRole("link", { name: "브라우저 테스트 코트 쇼핑몰에서 보기" })
+      .count(),
+    0,
+  );
   await page
-    .getByRole("heading", { name: "브라우저 테스트 코트 ↗", exact: true })
+    .getByRole("link", {
+      name: "Alden Wool Raglan Knit - Grey(Black) 쇼핑몰에서 보기",
+    })
     .waitFor();
-  check("BUY immediately leaves ING and appears in shop");
+  check("BUY leaves ING and the shop keeps its independent recommendations");
   await tab(/^큐레이션 룸/);
   await page
     .getByRole("button", { name: "빈티지 레더 블루종 NOT 판정" })
@@ -233,7 +241,7 @@ try {
   await page.getByRole("status").filter({ hasText: "NOT 판정이" }).waitFor();
   await tab(/^추천 숍/);
   assert.equal(
-    await page.getByRole("heading", { name: "빈티지 레더 블루종 ↗" }).count(),
+    await page.getByRole("heading", { name: "빈티지 레더 블루종" }).count(),
     0,
   );
   check("NOT does not enter shop");
@@ -280,7 +288,10 @@ try {
   );
   check("expired requests remain read-only");
   await role("member");
-  await page.getByRole("button", { name: "룸 개설하기", exact: false }).click();
+  await page.goto(origin + "/creators");
+  await page
+    .getByRole("button", { name: "큐레이션룸 만들기", exact: true })
+    .click();
   await page.getByLabel("룸 이름", { exact: true }).fill("브라우저의 취향");
   await page
     .getByLabel("한 줄 소개", { exact: false })
@@ -301,8 +312,12 @@ try {
   await page
     .getByRole("button", { name: "개설 신청하기", exact: true })
     .click();
-  await page.getByRole("dialog").waitFor({ state: "hidden" });
+  await page
+    .getByRole("dialog")
+    .getByText("신청이 접수되어 검토 중입니다.")
+    .waitFor();
   check("three-step application with fast-track threshold");
+  await page.goto(origin + "/creators/seoa");
   await role("admin");
   await tab(/^승인 관리/);
   await page
@@ -311,14 +326,11 @@ try {
   await page.getByRole("button", { name: "데모 승인하기" }).click();
   await page.getByText("APPROVED", { exact: true }).waitFor();
   await role("member");
+  await page.goto(origin + "/creators");
   await page
-    .getByRole("button", { name: "내 개설 신청", exact: false })
+    .getByRole("region", { name: "나의 큐레이션룸" })
+    .getByRole("link", { name: /브라우저의 취향/ })
     .click();
-  await page
-    .getByRole("dialog")
-    .getByText("APPROVED", { exact: true })
-    .waitFor();
-  await page.getByRole("link", { name: "내 큐레이션 룸 보기" }).click();
   await page
     .getByRole("heading", { name: "브라우저의 취향", exact: true })
     .waitFor();
@@ -336,10 +348,10 @@ try {
   await page.getByRole("dialog").waitFor({ state: "hidden" });
   await tab(/^추천 숍/);
   assert.equal(
-    await page.getByRole("heading", { name: "브라우저 테스트 코트 ↗" }).count(),
+    await page.getByRole("heading", { name: "브라우저 테스트 코트" }).count(),
     0,
   );
-  check("author deletion removes linked shop entry");
+  check("author deletion leaves the independent shop intact");
   await page.goto(origin + "/creators/seoa");
   await page
     .locator("article[data-request-id]")

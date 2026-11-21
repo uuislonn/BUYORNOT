@@ -2,9 +2,10 @@ import { resolve4 } from "node:dns/promises";
 import { request } from "node:https";
 import {
   validateProductUrl,
+  PRODUCT_HOSTS,
   validateProductImageUrl,
 } from "../_lib/product-url";
-import { productPricing } from "../_lib/product-price";
+import { offerOriginalPrice, productPricing } from "../_lib/product-price";
 import { PRODUCT_FIXTURES } from "./seed";
 import type { Product } from "../_lib/types";
 
@@ -37,7 +38,9 @@ export function validateProductPage(value: string): string {
     ? /^\/products\/\d+$/.test(url.pathname)
     : url.hostname.endsWith("29cm.co.kr")
       ? /^\/(?:products|catalog)\/\d+$/.test(url.pathname)
-      : /^\/Product\/\d+$/i.test(url.pathname);
+      : url.hostname === "www.oliveyoung.co.kr" ||
+        /^\/Product\/\d+$/i.test(url.pathname) ||
+        !PRODUCT_HOSTS.some((host) => host === url.hostname);
   if (!valid)
     throw new Error("쇼핑몰 홈이 아닌 개별 상품 상세 URL을 입력해 주세요.");
   return normalized;
@@ -109,11 +112,7 @@ function decode(value: string): string {
     },
   );
 }
-export function parseProductMetadata(
-  html: string,
-  productUrl: string,
-): Product {
-  const url = validateProductPage(productUrl);
+function readMetadata(html: string) {
   const meta = new Map<string, string>();
   for (const tag of html.matchAll(/<meta\b[^>]*>/gi)) {
     const attrs = new Map<string, string>();
@@ -151,6 +150,57 @@ export function parseProductMetadata(
       /* Ignore malformed optional JSON-LD. */
     }
   }
+  return { meta, structured };
+}
+function readPricing(
+  { meta, structured }: ReturnType<typeof readMetadata>,
+  requireCurrency = false,
+) {
+  const rawOffers = structured?.offers;
+  const offers = Array.isArray(rawOffers) ? rawOffers[0] : rawOffers;
+  const offer =
+    offers && typeof offers === "object"
+      ? (offers as Record<string, unknown>)
+      : {};
+  const metaCurrency =
+    meta.get("product:price:currency") ?? meta.get("og:price:currency");
+  if (requireCurrency) {
+    const currency = metaCurrency ?? offer.priceCurrency;
+    if (typeof currency !== "string" || currency.toUpperCase() !== "KRW")
+      return productPricing(null);
+  }
+  const metaAmount =
+    !metaCurrency || metaCurrency.toUpperCase() === "KRW"
+      ? (meta.get("product:price:amount") ?? meta.get("og:price:amount"))
+      : undefined;
+  const offerAmount =
+    !offer.priceCurrency || String(offer.priceCurrency).toUpperCase() === "KRW"
+      ? offer.price
+      : undefined;
+  return productPricing(
+    metaAmount ?? offerAmount,
+    meta.get("product:price:normal_price") ??
+      meta.get("product:original_price:amount") ??
+      offerOriginalPrice(offer.priceSpecification),
+    meta.get("product:price:sale_rate"),
+  );
+}
+
+export function parseLiveProductPricing(html: string, requireCurrency = false) {
+  return readPricing(readMetadata(html), requireCurrency);
+}
+
+export function parseProductMetadata(
+  html: string,
+  productUrl: string,
+): Product {
+  const url = validateProductPage(productUrl);
+  const { meta, structured } = readMetadata(html);
+  if (
+    !structured &&
+    !PRODUCT_HOSTS.some((host) => host === new URL(url).hostname)
+  )
+    throw new Error("상품 상세 페이지에서 공개 상품 정보를 찾지 못했어요.");
   const imageValue = structured?.image;
   const firstImage = Array.isArray(imageValue) ? imageValue[0] : imageValue;
   const image =
@@ -172,34 +222,12 @@ export function parseProductMetadata(
       : brand && typeof brand === "object"
         ? String((brand as Record<string, unknown>).name ?? "")
         : "";
-  const rawOffers = structured?.offers;
-  const offers = Array.isArray(rawOffers) ? rawOffers[0] : rawOffers;
-  const offer =
-    offers && typeof offers === "object"
-      ? (offers as Record<string, unknown>)
-      : {};
-  const metaCurrency =
-    meta.get("product:price:currency") ?? meta.get("og:price:currency");
-  const metaAmount =
-    !metaCurrency || metaCurrency.toUpperCase() === "KRW"
-      ? (meta.get("product:price:amount") ?? meta.get("og:price:amount"))
-      : undefined;
-  const offerAmount =
-    !offer.priceCurrency || offer.priceCurrency === "KRW"
-      ? offer.price
-      : undefined;
-  const pricing = productPricing(
-    metaAmount ?? offerAmount,
-    meta.get("product:price:normal_price") ??
-      meta.get("product:original_price:amount"),
-    meta.get("product:price:sale_rate"),
-  );
   return {
     url,
     name,
     brand: brandName.slice(0, 50) || new URL(url).hostname,
-    image: validateProductImageUrl(new URL(candidate, url).href),
-    ...pricing,
+    image: validateProductImageUrl(new URL(candidate, url).href, url),
+    ...readPricing({ meta, structured }),
     category: "의류",
     currency: "KRW",
   };

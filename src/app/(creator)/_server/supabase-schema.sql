@@ -21,7 +21,7 @@ create table public.curation_requests (
   product_url text not null, -- server canonicalization + approved metadata adapter required
   affiliate_url text,
   product_info jsonb not null,
-  category text not null check (category in ('의류','뷰티','신발','잡화','명품')),
+  category text not null check (category in ('의류','뷰티','신발','잡화')),
   concern_text text not null check (char_length(concern_text) between 1 and 150),
   situation_tags text[] not null default '{}' check (cardinality(situation_tags) <= 4),
   body_spec_snapshot jsonb not null default '{}'::jsonb, -- consented, validated fields only

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { BackToTop } from "../components/back-to-top";
+import { SiteFooter } from "../components/site-footer";
 
 export const metadata: Metadata = {
   title: "BUYORNOT",
@@ -11,7 +13,11 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ko">
-      <body>{children}</body>
+      <body>
+        {children}
+        <SiteFooter />
+        <BackToTop />
+      </body>
     </html>
   );
 }

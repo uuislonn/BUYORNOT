@@ -1,20 +1,30 @@
 "use client";
+import { SiteHeader } from "../../../components/site-header";
 import { ActivityRecords } from "./activity-records";
 import type { AccountActivity } from "./activity-types";
 import type { FeedPost } from "../../../features/community/types";
+import { deletePost, getPost } from "../../../features/community/actions";
+import { Modal as CommunityModal } from "../../../features/community/modal";
+import { VoteButtons } from "../../../features/community/vote-buttons";
+import { ProductCardTags } from "../../(creator)/_components/product-card-layout";
+import { Discussion } from "../../../features/community/discussion";
+import { PostForm } from "../../../features/community/post-form";
+import { PostActions } from "./post-actions";
 import { CommunityRecords } from "./community-records";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 import type { AccountCreator } from "./data";
 import type { CurationRequest, RequestInput } from "../../(creator)/_lib/types";
 import { effectiveStatus, daysRemaining } from "../../(creator)/_lib/policy";
+import { RequestDetail } from "../../(creator)/_components/request-detail";
 import { RequestForm } from "../../(creator)/_components/request-form";
 import { Modal } from "../../(creator)/_components/modal";
 import { SamplePhoto } from "../../(creator)/_components/sample-photo";
-import { ProductPrice } from "../../(creator)/_components/product-price";
+import { LiveProductPrice } from "../../(creator)/_components/live-product-price";
 import {
   createCurationRequest,
+  recordRequestView,
   updateCurationRequest,
   deleteCurationRequest,
   toggleCreatorFollow,
@@ -84,15 +94,24 @@ export function MyPage({
   now: number;
 }) {
   const router = useRouter();
-  const [section, setSection] = useState<Section>("overview");
+  const requested = useSearchParams().get("section");
+  const section =
+    sections.find((item) => item.id === requested)?.id ?? "overview";
   const [postType, setPostType] = useState<"all" | "community" | "curation">(
     "all",
   );
   const [activityTab, setActivityTab] = useState("참여한 투표");
+  const [participationDetail, setParticipationDetail] =
+    useState<FeedPost | null>(null);
   const [savedTab, setSavedTab] = useState("글");
   const [choosing, setChoosing] = useState(false);
   function navigate(next: Section) {
-    setSection(next);
+    if (next !== section) {
+      const url = new URL(window.location.href);
+      if (next === "overview") url.searchParams.delete("section");
+      else url.searchParams.set("section", next);
+      window.history.pushState(null, "", url);
+    }
     setNotice("");
   }
   const [name, setName] = useState(nickname);
@@ -142,7 +161,14 @@ export function MyPage({
   const [filter, setFilter] = useState<PostFilter>("ALL");
   const [search, setSearch] = useState("");
   const [editor, setEditor] = useState<CurationRequest | "new" | null>(null);
+  const [requestDetail, setRequestDetail] = useState<CurationRequest | null>(
+    null,
+  );
   const [removing, setRemoving] = useState<CurationRequest | null>(null);
+  const [communityEditor, setCommunityEditor] = useState<FeedPost | null>(null);
+  const [communityRemoving, setCommunityRemoving] = useState<FeedPost | null>(
+    null,
+  );
   const [notice, setNotice] = useState("");
   const [pending, startTransition] = useTransition();
   const counts = postCounts(posts, now);
@@ -150,7 +176,7 @@ export function MyPage({
     (post) => creatorFilter === "all" || post.creatorId === creatorFilter,
   );
   function openPosts(next: PostFilter = "ALL") {
-    setSection("posts");
+    navigate("posts");
     setPostType("curation");
     setFilter(next);
     setSearch("");
@@ -204,6 +230,31 @@ export function MyPage({
       }
     });
   }
+  function editCommunityPost(post: FeedPost) {
+    setNotice("");
+    setCommunityEditor(post);
+  }
+  function confirmCommunityRemoval(post: FeedPost) {
+    setNotice("");
+    setCommunityRemoving(post);
+  }
+  function removeCommunityPost() {
+    if (!communityRemoving || pending) return;
+    startTransition(async () => {
+      try {
+        const result = await deletePost(communityRemoving.id);
+        if (!result.ok) {
+          setNotice(result.error);
+          return;
+        }
+        setCommunityRemoving(null);
+        setNotice("고민을 삭제했어요.");
+        router.refresh();
+      } catch {
+        setNotice("삭제하지 못했어요. 다시 시도해 주세요.");
+      }
+    });
+  }
   const title = sections.find((item) => item.id === section)!.label;
   const isRecords = section === "overview" || section === "posts";
   const auxiliary = {
@@ -233,20 +284,7 @@ export function MyPage({
   };
   return (
     <div className={s.page}>
-      <header className={s.header}>
-        <Link href="/" className={s.logo}>
-          <span>Buy or Not</span>
-        </Link>
-        <Link className={s.roomLink} href="/community">
-          살말 커뮤니티 ↗
-        </Link>
-        <Link href="/creators/seoa">
-          큐레이션 룸 <span aria-hidden="true">↗</span>
-        </Link>
-        <span className={s.headerAvatar} aria-label={`${name}님`}>
-          {name.slice(0, 1)}
-        </span>
-      </header>
+      <SiteHeader currentPage="account" loggedIn accountName={name} />
       <div className={s.layout}>
         <aside className={s.sidebar}>
           <div className={s.profile}>
@@ -258,16 +296,8 @@ export function MyPage({
               {name}
               <span>님</span>
             </strong>
-            <span className={s.provider}>
-              {accountRole === "ADMIN"
-                ? "관리자 계정"
-                : accountRole === "CREATOR"
-                  ? "크리에이터 계정"
-                  : "일반 회원"}{" "}
-              · {provider} 로그인
-            </span>
-            <button type="button" onClick={() => setSection("settings")}>
-              프로필 수정 <span aria-hidden="true">↗</span>
+            <button type="button" onClick={() => navigate("settings")}>
+              프로필 수정
             </button>
           </div>
           <nav className={s.sideNav} aria-label="마이페이지 메뉴">
@@ -425,7 +455,7 @@ export function MyPage({
           ) : section === "participation" ? (
             <div>
               <div className={s.typeTabs}>
-                {["참여한 투표", "작성한 댓글", "댓글 단 글"].map((tab) => (
+                {["참여한 투표", "작성한 댓글"].map((tab) => (
                   <button
                     key={tab}
                     aria-pressed={activityTab === tab}
@@ -436,14 +466,15 @@ export function MyPage({
                 ))}
               </div>
               {activityTab === "참여한 투표" ? (
-                <CommunityRecords posts={participatedPosts} participation />
-              ) : activity ? (
-                <ActivityRecords
-                  activity={activity}
-                  kind={
-                    activityTab === "작성한 댓글" ? "작성한 댓글" : "댓글 단 글"
-                  }
+                <CommunityRecords
+                  posts={participatedPosts}
+                  onOpen={(post) => {
+                    setParticipationDetail(post);
+                    void getPost(post.id).catch(() => {});
+                  }}
                 />
+              ) : activity ? (
+                <ActivityRecords activity={activity} kind="작성한 댓글" />
               ) : (
                 <div className={s.empty}>
                   <h3>아직 남긴 댓글이 없어요</h3>
@@ -493,7 +524,7 @@ export function MyPage({
                     <p>{room.bio}</p>
                     <div className={s.creatorCardActions}>
                       <Link href={`/creators/${room.id}`}>
-                        큐레이션 룸 보기 ↗
+                        큐레이션 룸 보기
                       </Link>
                       <button
                         disabled={pending}
@@ -576,7 +607,7 @@ export function MyPage({
                   <h2>{auxiliary[section].title}</h2>
                   <p>{auxiliary[section].description}</p>
                   <Link className={s.primary} href="/creators">
-                    크리에이터 둘러보기 ↗
+                    크리에이터 둘러보기
                   </Link>
                 </div>
               )}
@@ -594,12 +625,12 @@ export function MyPage({
                         href={
                           accountRole === "ADMIN"
                             ? "/creators/seoa?view=admin"
-                            : "/creators/seoa"
+                            : "/creators/seoa/manage"
                         }
                       >
                         {accountRole === "ADMIN"
                           ? "크리에이터 신청 승인 관리 →"
-                          : "내 큐레이션 룸에서 질문 답변하기 →"}
+                          : "내 큐레이션 룸 관리하기 →"}
                       </Link>
                     </div>
                   )}
@@ -615,7 +646,7 @@ export function MyPage({
                         {loadError ? "—" : counts.ALL + communityPosts.length}
                         <small>개</small>
                       </strong>
-                      <em>커뮤니티와 큐레이션 활동 ↗</em>
+                      <em>커뮤니티와 큐레이션 활동</em>
                     </button>
                     <button onClick={() => navigate("participation")}>
                       <span>참여한 투표</span>
@@ -623,7 +654,7 @@ export function MyPage({
                         {participatedPosts.length}
                         <small>개</small>
                       </strong>
-                      <em>내가 고른 선택의 기록 ↗</em>
+                      <em>내가 고른 선택의 기록</em>
                     </button>
                     <button onClick={() => navigate("saved")}>
                       <span>저장한 글·상품</span>
@@ -634,7 +665,7 @@ export function MyPage({
                           : 0}
                         <small>개</small>
                       </strong>
-                      <em>다시 보고 싶은 글과 상품 ↗</em>
+                      <em>다시 보고 싶은 글과 상품</em>
                     </button>
                   </div>
                   <div className={s.spaces}>
@@ -686,7 +717,7 @@ export function MyPage({
                         setChoosing(true);
                       }}
                     >
-                      새로운 글 작성 <span aria-hidden="true">↗</span>
+                      새로운 글 작성
                     </button>
                     <span className={s.bannerArt} aria-hidden="true">
                       BUY<span>or</span>NOT?
@@ -713,12 +744,15 @@ export function MyPage({
                   </h2>
                 </div>
                 {section === "overview" && (
-                  <button onClick={() => openPosts()}>전체 보기 ↗</button>
+                  <button onClick={() => openPosts()}>전체 보기</button>
                 )}
               </div>
               {postType === "all" && communityPosts.length > 0 && (
                 <CommunityRecords
                   posts={communityPosts}
+                  busy={pending}
+                  onEdit={editCommunityPost}
+                  onRemove={confirmCommunityRemoval}
                   limit={section === "overview" ? 4 : undefined}
                 />
               )}
@@ -740,7 +774,13 @@ export function MyPage({
                 ))}
               </div>
               {postType === "community" ? (
-                <CommunityRecords posts={communityPosts} search={search} />
+                <CommunityRecords
+                  posts={communityPosts}
+                  search={search}
+                  busy={pending}
+                  onEdit={editCommunityPost}
+                  onRemove={confirmCommunityRemoval}
+                />
               ) : (
                 <>
                   {postType === "all" && (
@@ -802,6 +842,7 @@ export function MyPage({
                             <a
                               className={s.productImage}
                               href={post.product.url}
+                              aria-label={`${post.product.name} 쇼핑몰에서 보기`}
                               target="_blank"
                               rel="noopener noreferrer"
                             >
@@ -811,10 +852,19 @@ export function MyPage({
                               />
                             </a>
                             <div className={s.postContent}>
-                              <Link
-                                className={s.questionRoom}
-                                href={`/creators/${post.creatorId}`}
-                              >
+                              <button
+                                type="button"
+                                className={s.postDetailButton}
+                                aria-label={`${post.product.name} 글과 댓글 보기`}
+                                onClick={() => {
+                                  setRequestDetail(post);
+                                  void recordRequestView(
+                                    post.creatorId,
+                                    post.id,
+                                  ).catch(() => {});
+                                }}
+                              />
+                              <div className={s.questionRoom}>
                                 {creatorRooms.find(
                                   (room) => room.id === post.creatorId,
                                 )?.avatar && (
@@ -829,9 +879,8 @@ export function MyPage({
                                     />
                                   </span>
                                 )}
-                                {roomLabel(post.creatorId)}의 큐레이션 룸{" "}
-                                <span aria-hidden="true">↗</span>
-                              </Link>
+                                {roomLabel(post.creatorId)}의 큐레이션 룸
+                              </div>
                               <div className={s.postMeta}>
                                 <span
                                   className={`${s.status} ${status === "ING" ? s.waiting : status === "BUY" ? s.buy : ""}`}
@@ -856,39 +905,34 @@ export function MyPage({
                               <h3>{post.product.name}</h3>
                               <p className={s.concern}>{post.concern}</p>
                               <div className={s.postBottom}>
-                                <ProductPrice product={post.product} />
-                                <Link href={`/creators/${post.creatorId}`}>
-                                  {roomLabel(post.creatorId)} 룸 보기 ↗
-                                </Link>
+                                <LiveProductPrice
+                                  key={post.product.url}
+                                  product={post.product}
+                                />
                               </div>
                             </div>
-                            <div className={s.postActions}>
+                            <PostActions
+                              busy={pending}
+                              editUnavailable={
+                                status === "ING"
+                                  ? undefined
+                                  : "판정 완료 또는 만료된 고민은 수정할 수 없어요."
+                              }
+                              edit={() => {
+                                setNotice("");
+                                setEditor(post);
+                              }}
+                              remove={() => {
+                                setNotice("");
+                                setRemoving(post);
+                              }}
+                            >
                               {status === "ING" && (
-                                <>
-                                  <span className={s.days}>
-                                    마감 D-{daysRemaining(post, now)}
-                                  </span>
-                                  <button
-                                    disabled={pending}
-                                    onClick={() => {
-                                      setNotice("");
-                                      setEditor(post);
-                                    }}
-                                  >
-                                    수정
-                                  </button>
-                                </>
+                                <span className={s.days}>
+                                  마감 D-{daysRemaining(post, now)}
+                                </span>
                               )}
-                              <button
-                                disabled={pending}
-                                onClick={() => {
-                                  setNotice("");
-                                  setRemoving(post);
-                                }}
-                              >
-                                삭제
-                              </button>
-                            </div>
+                            </PostActions>
                           </article>
                         );
                       })}
@@ -924,9 +968,6 @@ export function MyPage({
               )}
             </>
           )}
-          <footer className={s.footer}>
-            © BUYORNOT <span>YOUR TASTE, YOUR CHOICE.</span>
-          </footer>
         </main>
       </div>
       {choosing && (
@@ -988,20 +1029,91 @@ export function MyPage({
           onSubmit={save}
         />
       )}
-      {removing && (
+      {participationDetail && section === "participation" && (
+        <CommunityModal
+          title="살말 고민"
+          close={() => {
+            setParticipationDetail(null);
+            router.refresh();
+          }}
+        >
+          <p>{participationDetail.nickname}</p>
+          <h3>{participationDetail.product.name}</h3>
+          <p>{participationDetail.concern}</p>
+          <ProductCardTags
+            category={participationDetail.category}
+            tags={participationDetail.tags}
+          />
+          <a
+            href={participationDetail.product.url}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            쇼핑몰에서 상품 보기
+          </a>
+          <VoteButtons
+            post={participationDetail}
+            loggedIn
+            login={() => router.push("/login")}
+            update={(post) =>
+              setParticipationDetail((current) =>
+                current?.id === post.id ? post : current,
+              )
+            }
+          />
+          <Discussion
+            key={participationDetail.id}
+            target={{ kind: "community", postId: participationDetail.id }}
+          />
+        </CommunityModal>
+      )}
+      {requestDetail && (
+        <RequestDetail
+          request={requestDetail}
+          now={now}
+          onClose={() => setRequestDetail(null)}
+        />
+      )}
+      {communityEditor && (
+        <PostForm
+          key={communityEditor.id}
+          post={communityEditor}
+          initialUrl={communityEditor.product.url}
+          close={() => setCommunityEditor(null)}
+          saved={() => {
+            setCommunityEditor(null);
+            setNotice("고민을 수정했어요.");
+            router.refresh();
+          }}
+        />
+      )}
+      {(removing || communityRemoving) && (
         <Modal
           title="이 고민을 삭제할까요?"
           busy={pending}
-          onClose={() => setRemoving(null)}
+          onClose={() => {
+            setRemoving(null);
+            setCommunityRemoving(null);
+          }}
         >
           {notice && <p role="alert">{notice}</p>}
           <p>삭제한 글은 복구할 수 없어요.</p>
-          <p>{removing.product.name}</p>
+          <p>{(removing ?? communityRemoving)?.product.name}</p>
           <div className={s.deleteActions}>
-            <button disabled={pending} onClick={() => setRemoving(null)}>
+            <button
+              disabled={pending}
+              onClick={() => {
+                setRemoving(null);
+                setCommunityRemoving(null);
+              }}
+            >
               취소
             </button>
-            <button className={s.primary} disabled={pending} onClick={remove}>
+            <button
+              className={s.primary}
+              disabled={pending}
+              onClick={communityRemoving ? removeCommunityPost : remove}
+            >
               {pending ? "삭제 중…" : "삭제하기"}
             </button>
           </div>

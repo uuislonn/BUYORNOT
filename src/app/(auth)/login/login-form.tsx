@@ -1,19 +1,21 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { submitAuth, kakaoLogin } from "../actions";
+import { SiteHeader } from "../../../components/site-header";
+import { submitAuth, kakaoLogin, checkUsername } from "../actions";
+import { usernameError, type UsernameResult } from "../../../lib/auth/username";
 import s from "./login.module.css";
 
 export type AuthMode = "login" | "signup" | "reset" | "update";
 export function LoginForm({
   mode = "login",
-  localTestEnabled = false,
   configured = false,
   kakaoEnabled = false,
   initialNotice = "",
 }: {
   mode?: AuthMode;
   localTestEnabled?: boolean;
+  previewEnabled?: boolean;
   configured?: boolean;
   kakaoEnabled?: boolean;
   initialNotice?: string;
@@ -22,6 +24,13 @@ export function LoginForm({
   const [notice, setNotice] = useState(initialNotice);
   const [pending, startTransition] = useTransition();
   const [done, setDone] = useState(false);
+  const [username, setUsername] = useState("");
+  const [usernameResult, setUsernameResult] = useState<UsernameResult | null>(
+    null,
+  );
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  const usernameRequest = useRef(0);
+  const acceptsIdentifier = mode === "login";
   const titles = {
     login: "다시 만나서 반가워요",
     signup: "나만의 취향을 시작해요",
@@ -30,7 +39,7 @@ export function LoginForm({
   };
   const subtitles = {
     login: "로그인하고 나만의 취향을 이어가세요.",
-    signup: "이메일 인증으로 안전하게 가입하세요.",
+    signup: "",
     reset: "가입한 이메일로 재설정 링크를 보내드려요.",
     update: "영문과 숫자를 포함한 10자 이상으로 설정하세요.",
   };
@@ -42,14 +51,7 @@ export function LoginForm({
   };
   return (
     <div className={s.page}>
-      <header className={s.header}>
-        <Link href="/" className={s.logo} aria-label="BUYORNOT 홈">
-          <span>Buy or Not</span>
-        </Link>
-        <Link href="/creators/seoa" className={s.back}>
-          둘러보기 <span aria-hidden="true">↗</span>
-        </Link>
-      </header>
+      <SiteHeader currentPage="home" />
       <main className={s.main}>
         <aside className={s.story}>
           <p className={s.eyebrow}>LESS GUESSING. BETTER CHOICES.</p>
@@ -70,7 +72,7 @@ export function LoginForm({
             <strong>
               BUY <i>or</i> NOT?
             </strong>
-            <span className={s.answer}>같이 골라볼까요? ↗</span>
+            <span className={s.answer}>같이 골라볼까요?</span>
           </div>
           <p className={s.caption}>YOUR TASTE, YOUR CHOICE.</p>
         </aside>
@@ -78,7 +80,7 @@ export function LoginForm({
           <div className={s.formWrap}>
             <p className={s.step}>WELCOME TO BUYORNOT</p>
             <h2>{titles[mode]}</h2>
-            <p className={s.subtitle}>{subtitles[mode]}</p>
+            {subtitles[mode] && <p className={s.subtitle}>{subtitles[mode]}</p>}
             <form
               key={mode}
               action={(form) => {
@@ -92,7 +94,7 @@ export function LoginForm({
             >
               <fieldset
                 className={s.fields}
-                disabled={pending || done || !configured}
+                disabled={pending || done || (!configured && mode !== "signup")}
               >
                 {mode === "signup" && (
                   <>
@@ -105,30 +107,79 @@ export function LoginForm({
                       name="nickname"
                       autoComplete="nickname"
                       minLength={2}
-                      maxLength={20}
-                      placeholder="2~20자로 입력해 주세요"
+                      maxLength={15}
+                      placeholder="2~15자로 입력해 주세요"
                       required
                     />
+                    <label className={s.label} htmlFor="username">
+                      아이디
+                    </label>
+                    <div className={s.usernameRow}>
+                      <input
+                        className={s.input}
+                        id="username"
+                        name="username"
+                        value={username}
+                        onChange={(event) => {
+                          setUsername(event.target.value);
+                          setUsernameResult(null);
+                          setCheckingUsername(false);
+                          usernameRequest.current += 1;
+                        }}
+                        aria-describedby="username-result"
+                        aria-invalid={usernameResult?.status === "duplicate"}
+                        autoComplete="username"
+                        minLength={2}
+                        maxLength={15}
+                        placeholder="영문·숫자·밑줄 2~15자"
+                        required
+                      />
+                      <button
+                        type="button"
+                        className={s.usernameCheck}
+                        disabled={checkingUsername || !!usernameError(username)}
+                        onClick={() => {
+                          const request = ++usernameRequest.current;
+                          setCheckingUsername(true);
+                          setUsernameResult(null);
+                          startTransition(async () => {
+                            const result = await checkUsername(username);
+                            if (request !== usernameRequest.current) return;
+                            setUsernameResult(result);
+                            setCheckingUsername(false);
+                          });
+                        }}
+                      >
+                        {checkingUsername ? "확인 중…" : "중복 확인하기"}
+                      </button>
+                    </div>
+                    <p
+                      id="username-result"
+                      role="status"
+                      className={
+                        usernameResult?.status === "available"
+                          ? s.usernameAvailable
+                          : s.usernameError
+                      }
+                    >
+                      {usernameResult?.message}
+                    </p>
                   </>
                 )}
                 {mode !== "update" && (
                   <>
                     <label className={s.label} htmlFor="email">
-                      {mode === "login" && localTestEnabled
-                        ? "아이디 또는 이메일"
-                        : "이메일"}
+                      {acceptsIdentifier ? "아이디 또는 이메일" : "이메일"}
                     </label>
                     <input
                       className={s.input}
                       id="email"
                       name="email"
-                      type={
-                        mode === "login" && localTestEnabled ? "text" : "email"
-                      }
+                      type={acceptsIdentifier ? "text" : "email"}
                       autoComplete={mode === "login" ? "username" : "email"}
                       maxLength={254}
                       placeholder={
-                        mode === "login" && localTestEnabled
+                        acceptsIdentifier
                           ? "아이디 또는 이메일"
                           : "이메일 주소를 입력해 주세요"
                       }
@@ -208,11 +259,17 @@ export function LoginForm({
                       <span>안전한 계정으로 취향을 이어가세요</span>
                       <Link href="/forgot-password">비밀번호 찾기</Link>
                     </>
-                  ) : (
-                    <span>비밀번호는 안전하게 암호화하여 관리합니다.</span>
-                  )}
+                  ) : null}
                 </div>
-                <button className={s.submit} type="submit">
+                <button
+                  className={s.submit}
+                  type="submit"
+                  disabled={
+                    !configured ||
+                    (mode === "signup" &&
+                      usernameResult?.status !== "available")
+                  }
+                >
                   {pending ? "처리 중…" : done ? "완료" : labels[mode]}{" "}
                   <span aria-hidden="true">→</span>
                 </button>
@@ -254,7 +311,7 @@ export function LoginForm({
               {mode === "login" ? (
                 <>
                   아직 회원이 아니신가요?{" "}
-                  <Link href="/signup">이메일로 가입하기 ↗</Link>
+                  <Link href="/signup">이메일로 가입하기</Link>
                 </>
               ) : (
                 <Link href="/login">로그인으로 돌아가기 →</Link>
@@ -265,18 +322,9 @@ export function LoginForm({
                 {notice}
               </p>
             )}
-            {!configured && (
-              <p className={s.preview}>
-                인증 서비스 연결 전입니다. 서비스 설정이 완료되면 가입할 수
-                있어요.
-              </p>
-            )}
           </div>
         </div>
       </main>
-      <footer className={s.footer}>
-        © BUYORNOT <span>좋아하는 것을, 더 나답게.</span>
-      </footer>
     </div>
   );
 }

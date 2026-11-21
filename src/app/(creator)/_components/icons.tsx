@@ -7,6 +7,7 @@ export function Icon({
 }: {
   name:
     | "heart"
+    | "comment"
     | "arrow"
     | "plus"
     | "check"
@@ -22,6 +23,8 @@ export function Icon({
   const paths = {
     heart:
       "M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z",
+    comment:
+      "M20 11.5a7.5 7.5 0 0 1-7.5 7.5h-2.8L5 21v-4.8a7.5 7.5 0 0 1-1.5-4.7A7.5 7.5 0 0 1 11 4h1.5a7.5 7.5 0 0 1 7.5 7.5Z",
     arrow: "M5 12h14M13 6l6 6-6 6",
     plus: "M12 5v14M5 12h14",
     check: "m5 12 4 4L19 6",

@@ -7,12 +7,15 @@ import {
 } from "node:fs";
 import { dirname } from "node:path";
 import { randomUUID } from "node:crypto";
-import type { Choice, Post } from "./types";
+import type { Choice, DiscussionComment, Post } from "./types";
 
 export interface CommunitySnapshot {
   version: 1;
   posts: Post[];
   votes: [string, Choice][];
+  saved?: [string, string[]][];
+  comments?: [string, DiscussionComment[]][];
+  curationViews?: [string, number][];
 }
 export interface CommunityPersistence {
   read(): CommunitySnapshot | null;
@@ -38,6 +41,40 @@ export class FileCommunityPersistence implements CommunityPersistence {
         data.version !== 1 ||
         !Array.isArray(data.posts) ||
         !Array.isArray(data.votes) ||
+        (data.curationViews !== undefined &&
+          (!Array.isArray(data.curationViews) ||
+            data.curationViews.some(
+              (entry) =>
+                !Array.isArray(entry) ||
+                typeof entry[0] !== "string" ||
+                !Number.isSafeInteger(entry[1]) ||
+                entry[1] < 0,
+            ))) ||
+        (data.saved !== undefined &&
+          (!Array.isArray(data.saved) ||
+            data.saved.some(
+              (entry) =>
+                !Array.isArray(entry) ||
+                typeof entry[0] !== "string" ||
+                !Array.isArray(entry[1]) ||
+                entry[1].some((id) => typeof id !== "string"),
+            ))) ||
+        (data.comments !== undefined &&
+          (!Array.isArray(data.comments) ||
+            data.comments.some(
+              (entry) =>
+                !Array.isArray(entry) ||
+                typeof entry[0] !== "string" ||
+                !Array.isArray(entry[1]) ||
+                entry[1].some(
+                  (comment) =>
+                    !comment ||
+                    typeof comment.id !== "string" ||
+                    typeof comment.nickname !== "string" ||
+                    typeof comment.body !== "string" ||
+                    typeof comment.createdAt !== "string",
+                ),
+            ))) ||
         data.posts.some(
           (post) =>
             !post ||

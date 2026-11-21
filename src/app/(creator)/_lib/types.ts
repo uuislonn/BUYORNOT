@@ -1,11 +1,4 @@
-export const CATEGORIES = [
-  "전체",
-  "의류",
-  "뷰티",
-  "신발",
-  "잡화",
-  "명품",
-] as const;
+export const CATEGORIES = ["전체", "의류", "뷰티", "신발", "잡화"] as const;
 export type Category = Exclude<(typeof CATEGORIES)[number], "전체">;
 export type Role = "USER" | "CREATOR" | "ADMIN";
 export type Decision = "BUY" | "NOT";
@@ -56,6 +49,8 @@ export type CurationRequest = {
   tags: string[];
   bodySpec: BodySpec;
   status: Status;
+  held?: boolean;
+  views?: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -102,6 +97,7 @@ export type Snapshot = {
   following: boolean;
   followerCount: number;
   likedIds: string[];
+  recommendations?: Product[];
   demoEnabled: boolean;
   postsEnabled?: boolean;
   localTest?: boolean;

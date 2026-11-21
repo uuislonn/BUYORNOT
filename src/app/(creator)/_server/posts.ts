@@ -8,7 +8,7 @@ import type {
   Profile,
   RequestInput,
 } from "../_lib/types";
-import { createSeed } from "./seed";
+import { directoryDatabase } from "./directory";
 import * as service from "./service";
 export type PostRow = {
   id: string;
@@ -88,7 +88,7 @@ export async function readPostDatabase(
   creatorId: string,
   client: Awaited<ReturnType<typeof authClient>>,
 ) {
-  const db = createSeed();
+  const db = directoryDatabase();
   // Validate the room before any database request.
   service.snapshot(db, null, creatorId, false);
   const { data, error } = await client

@@ -1,3 +1,6 @@
+:global(body):has(.shell:not(.dialogHost)) {
+  background: #fff;
+}
 .shell {
   --blue: #0100fe;
   --ink: #171717;
@@ -166,20 +169,10 @@
   color: #333;
 }
 .main {
-  max-width: 1280px;
+  max-width: none;
   margin: auto;
-  padding: 30px 32px 0;
-}
-.breadcrumb {
-  display: flex;
-  gap: 12px;
-  font-size: 9px;
-  letter-spacing: 1.6px;
-  color: #8d8d96;
-  margin-bottom: 20px;
-}
-.breadcrumb span {
-  color: #d4d4dc;
+  padding-block: 22px 0;
+  padding-inline: var(--page-gutter);
 }
 .cover {
   height: 256px;
@@ -494,6 +487,7 @@
   background: #f6f6ff;
 }
 .sortLabel {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 15px;
@@ -548,6 +542,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: #333;
 }
 .statusPill {
   padding: 3px 10px;
@@ -557,8 +552,12 @@
   color: #71717b;
   white-space: nowrap;
 }
-.cardTop .statusPill {
+.cardActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   margin-left: auto;
+  flex-shrink: 0;
 }
 .bluePill {
   background: #efefff;
@@ -574,8 +573,51 @@
   color: #898992;
   border-radius: 50%;
 }
+.commentButton {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  color: #64646e;
+}
+.commentButton:hover:not(:disabled) {
+  color: var(--blue);
+}
+.commentButton:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
 .liked {
   color: var(--blue) !important;
+}
+.heartGlyph {
+  position: relative;
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+}
+.heartFill {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  color: var(--blue);
+  opacity: 0;
+  transform: scale(0.65);
+  clip-path: inset(100% 0 0);
+  transition: none;
+}
+.heartButton[aria-pressed="true"] .heartFill {
+  opacity: 1;
+  transform: scale(1);
+  clip-path: inset(0);
+  transition:
+    clip-path 360ms cubic-bezier(0.2, 0.65, 0.3, 1),
+    transform 360ms cubic-bezier(0.2, 0.65, 0.3, 1),
+    opacity 180ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .heartButton[aria-pressed="true"] .heartFill {
+    transition: none;
+  }
 }
 .productVisual {
   display: block !important;
@@ -586,13 +628,10 @@
   overflow: hidden;
 }
 .productVisual > img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.4s;
-}
-.productVisual:hover > img {
-  transform: scale(1.025);
 }
 .productVisual::after {
   content: "";
@@ -611,6 +650,21 @@
   gap: 5px;
   z-index: 1;
 }
+.luxuryOverlay {
+  flex-wrap: nowrap;
+  align-items: center;
+}
+.luxuryOverlay > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.luxuryOverlay > span:last-child {
+  flex-shrink: 0;
+  margin-left: auto;
+  white-space: nowrap;
+}
 .productOverlay > span {
   padding: 4px 10px;
   border-radius: 20px;
@@ -619,25 +673,6 @@
   color: white;
   font-size: 10px;
   border: 1px solid #ffffff10;
-}
-.imageCategory {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  font-size: 8px;
-  letter-spacing: 0.5px;
-  color: white;
-  background: #0004;
-  padding: 3px 8px;
-  border-radius: 3px;
-  z-index: 1;
-}
-.imageArrow {
-  position: absolute;
-  top: 9px;
-  right: 13px;
-  color: white;
-  font-size: 18px;
 }
 .imageFallback {
   height: 100%;
@@ -662,6 +697,42 @@
 .cardBody {
   padding: 13px 13px 12px;
 }
+.brandRow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  margin-bottom: 11px;
+  color: #202025;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.brandMark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #e9e9ef;
+  border-radius: 50%;
+  background: #fff;
+  color: #656571;
+  font-size: 21px;
+  line-height: 1;
+  overflow: hidden;
+}
+.brandMark img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+.brandFallback {
+  transform: translateY(2px);
+}
+.brandName {
+  overflow-wrap: anywhere;
+}
 .concern {
   min-height: 66px;
   font-size: 11px;
@@ -669,16 +740,35 @@
   color: #4f4f56;
   overflow-wrap: anywhere;
 }
+.cardTagRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+.cardTagRow .cardTags {
+  margin-top: 0;
+}
 .cardTags {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 7px;
   margin-top: 8px;
   min-height: 18px;
 }
 .cardTags > span {
-  color: #9d9da7;
-  font-size: 9px;
+  color: #767681;
+  font-size: 10px;
+  line-height: 1.4;
+}
+.cardTags > .categoryTag {
+  padding: 3px 7px;
+  border-radius: 5px;
+  background: #f0f0f3;
+  color: #51515c;
+  font-weight: 600;
 }
 .cardMeta {
   border-top: 1px solid #e9e9ee;
@@ -696,6 +786,10 @@
   background: transparent;
   color: #898993;
   font-size: 10px !important;
+}
+.profileImport {
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 .ownActions {
   margin-left: auto;
@@ -768,79 +862,6 @@
   color: #93939d;
   font-size: 10px;
 }
-.shopGrid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 24px;
-}
-.shopCard {
-  min-width: 0;
-}
-.shopVisual {
-  position: relative;
-  aspect-ratio: 0.82;
-  overflow: hidden;
-  border-radius: 8px;
-  background: #efeeeb;
-}
-.shopVisual > a {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-.shopVisual img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.shopBadge {
-  position: absolute;
-  left: 10px;
-  bottom: 11px;
-  padding: 4px 9px;
-  background: white;
-  color: var(--blue);
-  font-size: 9px;
-  font-weight: 700;
-  border-radius: 3px;
-  pointer-events: none;
-}
-.shopHeart {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  border: 0;
-  border-radius: 50%;
-  background: #ffffffdf;
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-}
-.shopBrand {
-  font-size: 9px;
-  letter-spacing: 0.8px;
-  color: #999;
-  margin-top: 14px !important;
-}
-.shopCard h3 {
-  font-size: 12px;
-  font-weight: 500;
-  margin-top: 4px;
-}
-.shopCard > strong {
-  display: block;
-  margin-top: 6px;
-  font-size: 12px;
-  font-weight: 600;
-}
-.shopComment {
-  margin-top: 14px !important;
-  padding-top: 11px !important;
-  border-top: 1px solid var(--line);
-  font-size: 10px;
-  color: #90909a;
-}
 .empty {
   padding: 70px 20px;
   text-align: center;
@@ -859,32 +880,6 @@
 }
 .empty p {
   font-size: 12px;
-}
-.bottomNote {
-  margin: 72px 0 0;
-  border-top: 1px solid var(--line);
-  padding: 45px 0;
-  text-align: center;
-}
-.bottomNote > span {
-  font-size: 9px;
-  letter-spacing: 2px;
-  color: #acacb4;
-}
-.bottomNote > p {
-  font-size: 16px;
-  margin-top: 9px;
-  letter-spacing: -0.5px;
-}
-.bottomNote > button {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 15px;
-  color: var(--blue);
-  border: 0;
-  background: none;
-  font-size: 11px;
 }
 .footer {
   display: flex;
@@ -905,6 +900,9 @@
   margin-left: auto;
   font-size: 8px;
   letter-spacing: 1px;
+}
+.dialogHost {
+  display: contents;
 }
 .dialog {
   border: 1px solid #e9e9f0;
@@ -1037,6 +1035,8 @@
   background: #f7f7fa;
   border-radius: 8px;
   padding: 12px;
+  color: inherit;
+  text-decoration: none;
 }
 .previewImage {
   width: 70px;
@@ -1059,7 +1059,9 @@
   margin-top: 5px;
 }
 .preview small {
-  color: #999;
+  display: block;
+  margin-top: 6px;
+  color: #6f6f7b;
   font-size: 10px;
 }
 .fieldGrid {
@@ -1309,9 +1311,6 @@
   background: #84293c;
 }
 @media (min-width: 1600px) {
-  .main {
-    max-width: 1500px;
-  }
   .cardGrid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
@@ -1341,15 +1340,8 @@
     padding: 0 9px;
     gap: 5px;
   }
-  .cardTop .statusPill {
-    padding-inline: 7px;
-    font-size: 8px;
-  }
   .authorName {
     max-width: 65px;
-  }
-  .shopGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 @media (max-width: 900px) {
@@ -1369,9 +1361,6 @@
   }
   .applyLink {
     display: none;
-  }
-  .main {
-    padding-inline: 24px;
   }
   .profilePanel {
     flex-wrap: wrap;
@@ -1442,12 +1431,7 @@
     padding-right: 10px;
   }
   .main {
-    padding: 20px 16px 0;
-  }
-  .breadcrumb {
-    font-size: 8px;
-    margin: 0 4px 15px;
-    letter-spacing: 1px;
+    padding-top: 16px;
   }
   .cover {
     height: 215px;
@@ -1577,7 +1561,6 @@
     font-size: 9px;
   }
   .filters {
-    flex-wrap: wrap;
     margin: 17px 0;
     gap: 13px;
   }
@@ -1589,11 +1572,9 @@
     padding: 5px 12px;
   }
   .sortLabel {
-    width: 100%;
-    justify-content: space-between;
+    gap: 8px;
   }
   .cardGrid,
-  .shopGrid,
   .adminList {
     grid-template-columns: minmax(0, 1fr);
     gap: 23px;
@@ -1610,13 +1591,6 @@
     font-size: 11px;
     max-width: 100px;
   }
-  .cardTop .statusPill {
-    font-size: 9px;
-    padding-inline: 10px;
-  }
-  .productVisual {
-    aspect-ratio: 0.91;
-  }
   .cardBody {
     padding: 14px;
   }
@@ -1625,7 +1599,7 @@
     min-height: 80px;
   }
   .cardTags > span {
-    font-size: 10px;
+    font-size: 11px;
   }
   .cardMeta {
     margin-top: 20px;
@@ -1639,27 +1613,8 @@
     height: 33px;
     font-size: 11px !important;
   }
-  .shopGrid {
-    gap: 32px;
-  }
-  .shopVisual {
-    aspect-ratio: 0.95;
-  }
-  .shopBrand {
-    font-size: 10px;
-  }
-  .shopCard h3 {
-    font-size: 14px;
-  }
   .shopComment {
     font-size: 12px;
-  }
-  .bottomNote {
-    margin-top: 45px;
-    padding-block: 33px;
-  }
-  .bottomNote > p {
-    font-size: 14px;
   }
   .footer {
     flex-wrap: wrap;
@@ -1821,4 +1776,87 @@
 .shell .wordmark img {
   flex-shrink: 0;
   object-fit: contain;
+}
+
+/* Match the community product-link hover, including keyboard focus. */
+.productVisual > .photoCrop,
+.productVisual > img {
+  transition:
+    transform 0.4s,
+    filter 0.4s;
+}
+.productVisual:hover > .photoCrop,
+.productVisual:focus-visible > .photoCrop,
+.productVisual:hover > img,
+.productVisual:focus-visible > img {
+  filter: blur(6px);
+  transform: scale(1.04);
+}
+.shoppingHover {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #0003;
+  color: white;
+  opacity: 0;
+  transition: opacity 0.2s;
+  font-size: 13px;
+  z-index: 2;
+  pointer-events: none;
+}
+.productVisual:hover .shoppingHover,
+.productVisual:focus-visible .shoppingHover {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .productVisual > .photoCrop,
+  .productVisual > img,
+  .shoppingHover {
+    transition: none;
+  }
+}
+
+/* Keep the face and upper outfit visible when portrait photos fill a wide banner. */
+.cover img[src="/creators/fit-style.jpg"] {
+  object-position: 50% 35%;
+}
+.cover img[src="/creators/kkang-style.jpg"] {
+  object-position: 50% 16%;
+}
+.cover img[src="/creators/winter-style.jpg"] {
+  object-position: 50% 60%;
+}
+
+.cover img[src="/creators/kkang-editorial-v2.jpg"] {
+  object-position: 50% 28%;
+}
+.cover img[src="/creators/winter-editorial-v2.png"] {
+  object-position: 50% 65%;
+}
+
+.shell .duplicatePost {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.decisionFields {
+  display: grid;
+  gap: 8px;
+}
+.decisionFieldHeading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+}
+.holdCheckbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
 }

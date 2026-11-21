@@ -29,7 +29,7 @@ export function ProductPreview({ product }: { product: Product }) {
         <strong>{product.name}</strong>
         <p>₩{product.price.toLocaleString("ko-KR")}</p>
         <a href={product.url} target="_blank" rel="noopener noreferrer">
-          상품 상세 보기 ↗
+          상품 상세 보기
         </a>
       </div>
     </div>

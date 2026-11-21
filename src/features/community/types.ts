@@ -22,6 +22,8 @@ export interface Product {
   brand: string;
   image: string;
   price: number;
+  originalPrice?: number | null;
+  discountRate?: number | null;
   currency: "KRW";
 }
 export interface Post {
@@ -33,11 +35,14 @@ export interface Post {
   concern: string;
   visibility: Visibility;
   bodyProfile: BodyProfile;
+  tags?: string[];
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
   buy: number;
   not: number;
+  /** Legacy posts without this field start at zero. */
+  views?: number;
 }
 export interface FeedPost extends Post {
   myVote: Choice | null;
@@ -48,9 +53,21 @@ export interface PostInput {
   concern: string;
   visibility: Visibility;
   bodyProfile: BodyProfile;
+  tags?: string[];
 }
 export interface Viewer {
   id: string;
   nickname: string;
 }
 export type Result<T> = { ok: true; data: T } | { ok: false; error: string };
+
+export type CommentTarget =
+  | { kind: "community"; postId: string }
+  | { kind: "curation"; roomId: string; postId: string };
+
+export type DiscussionComment = {
+  id: string;
+  nickname: string;
+  body: string;
+  createdAt: string;
+};

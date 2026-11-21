@@ -100,3 +100,47 @@ it("reloads example activity changed on disk instead of serving an empty cached 
     "new-example",
   ]);
 });
+
+it("keeps Soal's identity and ownership when discovery rooms are reordered and reloaded", async () => {
+  const { createSeed } = await import("../../app/(creator)/_server/seed");
+  const db = createSeed();
+  const soal = db.creators.find((room) => room.id === "seoa")!;
+  db.creators.unshift({
+    ...soal,
+    id: "another-room",
+    ownerId: "another-owner",
+  });
+  const cfg = JSON.parse(state.file);
+  cfg.accounts.push({
+    id: "fixture-creator",
+    nickname: "크리에이터 테스트",
+    role: "CREATOR",
+    salt: "salt",
+    hash: passwordHash("fixture-pass", "salt"),
+  });
+  state.file = JSON.stringify(cfg);
+  state.activity = JSON.stringify(db);
+  state.mtime++;
+  for (let pass = 0; pass < 2; pass++) {
+    const loaded = localTestDatabase();
+    expect(
+      loaded.creators.find((room) => room.id === "another-room")?.ownerId,
+    ).toBe("another-owner");
+    expect(loaded.creators.find((room) => room.id === "seoa")?.ownerId).toBe(
+      "fixture-creator",
+    );
+    expect(
+      loaded.profiles.find((profile) => profile.id === "fixture-creator"),
+    ).toMatchObject({
+      nickname: "소올soal",
+      avatar: "/creators/soal-avatar.jpg",
+    });
+    state.activity = JSON.stringify(loaded);
+    state.mtime++;
+  }
+  await loginLocalTest("fixture-creator", "fixture-pass");
+  expect(await localTestProfile()).toMatchObject({
+    nickname: "소올soal",
+    avatar: "/creators/soal-avatar.jpg",
+  });
+});

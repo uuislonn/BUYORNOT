@@ -1,5 +1,3 @@
-import soalBanner from "../_assets/soal-banner.jpg";
-import soalAvatar from "../_assets/soal-avatar.jpg";
 import type { Database, Product, CurationRequest } from "../_lib/types";
 
 // Main images, product details and non-member sale prices checked on 2026-10-27.
@@ -1082,7 +1080,7 @@ export function createSeed(now = Date.now()): Database {
         id: "creator",
         nickname: "소올soal",
         role: "CREATOR",
-        avatar: soalAvatar.src,
+        avatar: "/creators/soal-avatar.jpg",
         verified: false,
       },
       {
@@ -1119,9 +1117,9 @@ export function createSeed(now = Date.now()): Database {
         id: "seoa",
         ownerId: "creator",
         handle: "i0cc0i",
-        title: "소올soal",
+        title: "소올의 큐레이션 룸",
         bio: "밥친구 🍚 룩일기부터 화장일기까지, 오늘의 살까 말까를 함께 골라봐요.",
-        cover: soalBanner.src,
+        cover: "/creators/soal-banner.jpg",
         links: [
           { label: "Instagram", url: "https://www.instagram.com/i0c0i/" },
           { label: "YouTube", url: "https://www.youtube.com/@i0cc0i/videos" },

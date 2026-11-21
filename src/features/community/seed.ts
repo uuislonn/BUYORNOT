@@ -1,4 +1,5 @@
 import type { Post } from "./types";
+import { seedConcerns } from "./seed-concerns";
 import { additionalProducts } from "./seed-products";
 // Official MUSINSA product pages and image links checked on 2026-11-06.
 // Prices are page snapshots, not live offers; the original six retain 2026-10-22 prices.
@@ -496,9 +497,43 @@ function random(limit: number) {
   return Math.floor((randomState / 4294967296) * limit);
 }
 
+const beautyTones: Partial<Record<number, string>> = {
+  30: "여름 쿨톤",
+  31: "봄 웜톤",
+  36: "가을 웜톤",
+  37: "여름 쿨톤",
+  38: "겨울 쿨톤",
+  39: "봄 웜톤",
+  42: "겨울 쿨톤",
+};
+
+const clothingProfiles: Partial<Record<number, Post["bodyProfile"]>> = {
+  0: { height_cm: "165", personal_color: "여름 쿨톤" },
+  2: { height_cm: "158", personal_color: "봄 웜톤" },
+  3: { height_cm: "172" },
+  4: { personal_color: "가을 웜톤" },
+  6: { height_cm: "161" },
+  9: { height_cm: "167" },
+  10: { personal_color: "겨울 쿨톤" },
+  13: { height_cm: "176" },
+  14: { personal_color: "여름 쿨톤" },
+  17: { height_cm: "179" },
+  18: { height_cm: "163" },
+  21: { personal_color: "겨울 쿨톤" },
+  22: { height_cm: "155" },
+  25: { height_cm: "168" },
+  26: { height_cm: "174" },
+  29: { personal_color: "가을 웜톤" },
+};
+
 const initialPosts: Post[] = items.map((p, i) => {
   const original = i < 6;
   const prompts = concerns[p[0]];
+  // Preserve the sequence used by the existing vote fixtures.
+  if (!original && i % 2 === 0) {
+    random(30);
+    random(4);
+  }
   return {
     id: `sample-${i}`,
     authorId: `author-${i}`,
@@ -516,17 +551,10 @@ const initialPosts: Post[] = items.map((p, i) => {
       currency: "KRW",
     },
     category: p[0],
-    concern: original ? p[5] : prompts[(i - 6) % prompts.length],
+    concern:
+      seedConcerns[i] ?? (original ? p[5] : prompts[(i - 6) % prompts.length]),
     visibility: "PUBLIC",
-    bodyProfile:
-      i % 2
-        ? {}
-        : {
-            height_cm: original ? "165" : String(155 + random(30)),
-            personal_color: ["여름 쿨톤", "봄 웜톤", "가을 웜톤", "겨울 쿨톤"][
-              original ? 0 : random(4)
-            ],
-          },
+    bodyProfile: clothingProfiles[i] ?? {},
     createdAt: new Date(Date.UTC(2026, 9, 21, 8 - i)).toISOString(),
     updatedAt: new Date(Date.UTC(2026, 9, 21, 8 - i)).toISOString(),
     deletedAt: null,
@@ -540,15 +568,19 @@ export const seedPosts: Post[] = [
   ...additionalProducts.map(({ category, product, concern }, index): Post => {
     const i = initialPosts.length + index;
     const createdAt = new Date(Date.UTC(2026, 9, 21, 8 - i)).toISOString();
+    const tone = beautyTones[i];
     return {
       id: `sample-${i}`,
       authorId: `author-${i}`,
       nickname: nicknames[i],
       category,
       product,
-      concern: concern ?? concerns[category][index % concerns[category].length],
+      concern:
+        seedConcerns[i] ??
+        concern ??
+        concerns[category][index % concerns[category].length],
       visibility: "PUBLIC",
-      bodyProfile: category === "뷰티" ? { personal_color: "봄 웜톤" } : {},
+      bodyProfile: tone ? { personal_color: tone } : {},
       createdAt,
       updatedAt: createdAt,
       deletedAt: null,

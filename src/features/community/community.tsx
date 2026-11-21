@@ -2,26 +2,40 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { SiteHeader } from "../../components/site-header";
-import { deletePost, getPost, loadCommunity } from "./actions";
+import {
+  deletePost,
+  getPost,
+  loadCommunity,
+  setCommunityProductSaved,
+} from "./actions";
 import { categories, type FeedPost, type Viewer } from "./types";
+import {
+  ProductCardLayout,
+  ProductCardTags,
+} from "../../app/(creator)/_components/product-card-layout";
+import { CommentButton } from "../../app/(creator)/_components/comment-button";
+import { SaveHeart } from "../../app/(creator)/_components/save-heart";
+import { Discussion } from "./discussion";
 import { ProductImage } from "./product-image";
 import { VoteButtons } from "./vote-buttons";
-import { ClipboardModal } from "./clipboard-modal";
 import { PostForm } from "./post-form";
 import { Modal } from "./modal";
-import { LoginModal } from "./login-modal";
 import { ShareButton } from "./share-button";
 import { PostOwnerMenu } from "./post-owner-menu";
 import styles from "./community.module.css";
+import { CategoryFilter } from "./category-filter";
+import { SortMenu } from "./sort-menu";
+import { compareFeedPosts, parseFeedSort, type FeedSort } from "./feed-sort";
 export default function Community() {
   const router = useRouter();
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [viewer, setViewer] = useState<Viewer | null>(null);
+  const [savedIds, setSavedIds] = useState<string[]>([]);
+  const [savingIds, setSavingIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [category, setCategory] = useState("전체");
-  const [sort, setSort] = useState("latest");
-  const [login, setLogin] = useState(false);
+  const [sort, setSort] = useState<FeedSort>("latest");
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState<{ url: string; post?: FeedPost } | null>(
     null,
@@ -37,6 +51,7 @@ export default function Community() {
       if (r.ok) {
         setPosts(r.data.posts);
         setViewer(r.data.viewer);
+        setSavedIds(r.data.savedIds);
       } else setError(r.error);
     } catch {
       setError("피드를 불러오지 못했습니다. 다시 시도해 주세요.");
@@ -53,6 +68,7 @@ export default function Community() {
         if (r.ok) {
           setPosts(r.data.posts);
           setViewer(r.data.viewer);
+          setSavedIds(r.data.savedIds);
         } else setError(r.error);
         setLoading(false);
       })
@@ -69,7 +85,7 @@ export default function Community() {
           ? q.get("category")!
           : "전체",
       );
-      setSort(q.get("sort") === "popular" ? "popular" : "latest");
+      setSort(parseFeedSort(q.get("sort")));
       const request = ++detailRequest;
       const id = q.get("post");
       if (!id) {
@@ -81,8 +97,14 @@ export default function Community() {
       getPost(id)
         .then((result) => {
           if (!active || request !== detailRequest) return;
-          if (result.ok) setDetail(result.data);
-          else {
+          if (result.ok) {
+            setDetail(result.data);
+            setPosts((previous) =>
+              previous.map((post) =>
+                post.id === result.data.id ? result.data : post,
+              ),
+            );
+          } else {
             setDetail(null);
             setError(result.error);
           }
@@ -116,7 +138,7 @@ export default function Community() {
   }
   function filter(c: string, s: string) {
     setCategory(c);
-    setSort(s);
+    setSort(parseFeedSort(s));
     const url = new URL(location.href);
     if (c === "전체") url.searchParams.delete("category");
     else url.searchParams.set("category", c);
@@ -124,16 +146,45 @@ export default function Community() {
     else url.searchParams.set("sort", s);
     history.pushState(null, "", url);
   }
-  function write(url = "") {
+  function write() {
     if (!viewer) {
-      setLogin(true);
+      router.push("/login");
       return;
     }
-    setForm({ url });
+    setForm({ url: "" });
   }
   function update(p: FeedPost) {
     setPosts((prev) => prev.map((x) => (x.id === p.id ? p : x)));
     setDetail((prev) => (prev?.id === p.id ? p : prev));
+  }
+  async function toggleSaved(id: string) {
+    if (!viewer) return router.push("/login");
+    if (savingIds.includes(id)) return;
+    const wasSaved = savedIds.includes(id);
+    function showSaved(saved: boolean) {
+      setSavedIds((previous) =>
+        saved
+          ? [...new Set([...previous, id])]
+          : previous.filter((item) => item !== id),
+      );
+    }
+    setSavingIds((previous) => [...previous, id]);
+    setError("");
+    showSaved(!wasSaved);
+    try {
+      const result = await setCommunityProductSaved(id, !wasSaved);
+      if (!result.ok) throw new Error(result.error);
+      showSaved(result.data);
+    } catch (error) {
+      showSaved(wasSaved);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "저장하지 못했어요. 다시 시도해 주세요.",
+      );
+    } finally {
+      setSavingIds((previous) => previous.filter((item) => item !== id));
+    }
   }
   async function destroy() {
     if (!remove) return;
@@ -153,165 +204,200 @@ export default function Community() {
   }
   const visible = posts
     .filter((p) => category === "전체" || p.category === category)
-    .sort((a, b) =>
-      sort === "popular"
-        ? b.buy + b.not - (a.buy + a.not) ||
-          b.createdAt.localeCompare(a.createdAt)
-        : b.createdAt.localeCompare(a.createdAt),
-    );
+    .sort((a, b) => compareFeedPosts(a, b, sort));
+  async function openDetail(id: string) {
+    if (openingPost) return;
+    setOpeningPost(true);
+    try {
+      const result = await getPost(id);
+      if (result.ok) {
+        update(result.data);
+        setDetail(result.data);
+      } else setError(result.error);
+    } catch {
+      setError("게시글을 불러오지 못했습니다. 다시 시도해 주세요.");
+    } finally {
+      setOpeningPost(false);
+    }
+  }
   return (
-    <div className={styles.app}>
-      <SiteHeader
-        currentPage="community"
-        loggedIn={!!viewer}
-        busy={busy}
-        accountLabel={viewer ? "My Page" : undefined}
-        onAccount={() => (viewer ? router.push("/account") : setLogin(true))}
-      />
-      <main className={styles.main}>
-        <h1 className={styles.pageTitle}>살말 투표 커뮤니티</h1>
-        <div className={styles.toolbar}>
-          <div className={styles.filters} role="group" aria-label="카테고리">
-            {categories.map((c) => (
-              <button
-                aria-pressed={category === c}
-                key={c}
-                onClick={() => filter(c, sort)}
-              >
-                {c === "전체" ? "ALL" : c}
+    <>
+      <div className={styles.app}>
+        <SiteHeader
+          currentPage="community"
+          loggedIn={!!viewer}
+          busy={busy}
+          accountLabel={viewer ? "My Page" : undefined}
+          onAccount={() => router.push(viewer ? "/account" : "/login")}
+        />
+        <main className={styles.main}>
+          <h1 className={styles.pageTitle}>살말 투표 커뮤니티</h1>
+          <div className={styles.toolbar}>
+            <CategoryFilter
+              categories={categories}
+              value={category}
+              onChange={(c) => filter(c, sort)}
+            />
+            <div className={styles.sort}>
+              <SortMenu
+                value={sort}
+                onChange={(value) => filter(category, value)}
+              />
+            </div>
+          </div>
+          <div className={styles.feedTop}>
+            <p>
+              <strong>
+                {category === "전체" ? "지금, 모두의 고민" : `${category} 고민`}
+              </strong>{" "}
+              <span>{visible.length}</span>
+            </p>
+            <div className={styles.feedActions}>
+              <button className={styles.primary} onClick={write}>
+                살말 고민 올리기
               </button>
-            ))}
+            </div>
           </div>
-          <label className={styles.sort}>
-            정렬{" "}
-            <select
-              value={sort}
-              onChange={(e) => filter(category, e.target.value)}
-            >
-              <option value="latest">최신순</option>
-              <option value="popular">인기순</option>
-            </select>
-          </label>
-        </div>
-        <div className={styles.feedTop}>
-          <p>
-            <strong>
-              {category === "전체" ? "지금, 모두의 고민" : `${category} 고민`}
-            </strong>{" "}
-            <span>{visible.length}</span>
-          </p>
-          <div className={styles.feedActions}>
-            <ClipboardModal openLink={write} />
-            <button className={styles.primary} onClick={() => write()}>
-              살말 고민 올리기 ↗
-            </button>
-          </div>
-        </div>
-        <p className={styles.demo}>
-          DEMO · 실제 상품 링크와 사진을 사용한 예시 게시글·투표입니다. 가격은
-          2026년 10–11월 상품 페이지 스냅샷이며 현재 가격·재고는 쇼핑몰에서
-          확인해 주세요. 작성 내용은 서버 재시작 시 초기화됩니다.
-        </p>
-        {error && (
-          <div role="alert" className={styles.error}>
-            {error} <button onClick={refresh}>다시 불러오기</button>
-          </div>
-        )}
-        {openingPost && <p role="status">공유된 게시글을 불러오는 중…</p>}
-        {loading ? (
-          <div role="status" className={styles.empty}>
-            모두의 고민을 불러오는 중…
-          </div>
-        ) : visible.length === 0 ? (
-          <div className={styles.empty}>
-            <h2>아직 올라온 고민이 없어요.</h2>
-            <p>첫 번째 살말 고민을 남겨보세요.</p>
-            <button onClick={() => write()}>고민 작성하기 ↗</button>
-          </div>
-        ) : (
-          <div className={styles.grid}>
-            {visible.map((p, i) => (
-              <article className={styles.card} key={p.id}>
-                <div className={styles.cardHeader}>
-                  <button onClick={() => setDetail(p)}>
-                    <span
-                      className={styles.avatar}
-                      style={{
-                        background: ["#e5e2ee", "#e6e9da", "#f0e1da"][i % 3],
-                      }}
+
+          {error && (
+            <div role="alert" className={styles.error}>
+              {error} <button onClick={refresh}>다시 불러오기</button>
+            </div>
+          )}
+          {openingPost && <p role="status">공유된 게시글을 불러오는 중…</p>}
+          {loading ? (
+            <div role="status" className={styles.empty}>
+              모두의 고민을 불러오는 중…
+            </div>
+          ) : visible.length === 0 ? (
+            <div className={styles.empty}>
+              <h2>아직 올라온 고민이 없어요.</h2>
+              <p>첫 번째 살말 고민을 남겨보세요.</p>
+              <button onClick={write}>고민 작성하기</button>
+            </div>
+          ) : (
+            <div className={styles.grid}>
+              {visible.map((p, i) => (
+                <ProductCardLayout
+                  key={p.id}
+                  author={p.nickname}
+                  product={{ ...p.product, price: p.product.price || null }}
+                  image={<ProductImage post={p} eager={i < 4} />}
+                  actions={
+                    <SaveHeart
+                      name={p.product.name}
+                      liked={savedIds.includes(p.id)}
+                      pending={savingIds.includes(p.id)}
+                      onClick={() => toggleSaved(p.id)}
+                    />
+                  }
+                  commentAction={
+                    <CommentButton
+                      disabled={openingPost}
+                      onClick={() => openDetail(p.id)}
+                    />
+                  }
+                  concern={
+                    <button
+                      className={styles.cardConcern}
+                      disabled={openingPost}
+                      onClick={() => openDetail(p.id)}
                     >
-                      {p.nickname.slice(0, 1)}
-                    </span>
-                    {p.nickname}
-                  </button>
-                  <span>{p.category}</span>
-                </div>
-                <a
-                  className={styles.image}
-                  href={p.product.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`${p.product.name} 쇼핑몰에서 보기`}
+                      {p.concern}
+                    </button>
+                  }
+                  category={p.category}
+                  tags={p.tags}
+                  tagDetails={
+                    <>
+                      {Object.entries(p.bodyProfile).map(([key, value]) => (
+                        <span key={key}>
+                          #{value}
+                          {key === "height_cm"
+                            ? "cm"
+                            : key === "weight_kg"
+                              ? "kg"
+                              : key === "age"
+                                ? "세"
+                                : ""}
+                        </span>
+                      ))}
+                      {p.visibility !== "PUBLIC" && <span>나만 보기</span>}
+                    </>
+                  }
                 >
-                  <ProductImage post={p} eager={i < 4} />
-                  <div className={styles.imageCaption}>
-                    <span>{p.product.name}</span>
-                    <span>
-                      {p.product.price
-                        ? `₩${p.product.price.toLocaleString("ko-KR")}`
-                        : "가격 확인 필요"}
-                    </span>
-                  </div>
-                  <div className={styles.imageHover}>쇼핑몰에서 보기 ↗</div>
-                </a>
-                <div className={styles.cardBody}>
-                  <button
-                    className={styles.concern}
-                    onClick={() => setDetail(p)}
-                  >
-                    {p.concern}
-                  </button>
-                  <div className={styles.tags}>
-                    {Object.entries(p.bodyProfile).map(([k, v]) => (
-                      <span key={k}>
-                        {v}
-                        {k === "height_cm"
-                          ? "cm"
-                          : k === "weight_kg"
-                            ? "kg"
-                            : k === "age"
-                              ? "세"
-                              : ""}
-                      </span>
-                    ))}
-                    {p.visibility !== "PUBLIC" && <span>나만 보이는 Mock</span>}
-                  </div>
                   <VoteButtons
                     post={p}
                     loggedIn={!!viewer}
-                    login={() => setLogin(true)}
+                    login={() => router.push("/login")}
                     update={update}
                   />
-                </div>
-              </article>
-            ))}
-          </div>
+                </ProductCardLayout>
+              ))}
+            </div>
+          )}
+        </main>
+        {detail && (
+          <Modal
+            title="살말 고민"
+            close={closeDetail}
+            actions={
+              <>
+                <ShareButton key={detail.id} post={detail} />
+                <PostOwnerMenu
+                  key={`owner-${detail.id}`}
+                  isOwner={detail.authorId === viewer?.id}
+                  edit={() => {
+                    setForm({ url: detail.product.url, post: detail });
+                    setDetail(null);
+                  }}
+                  remove={() => {
+                    setRemove(detail);
+                    setDetail(null);
+                  }}
+                />
+              </>
+            }
+          >
+            <p className={styles.eyebrow}>{detail.nickname}</p>
+            <h3>{detail.product.name}</h3>
+            <p>{detail.concern}</p>
+            <ProductCardTags category={detail.category} tags={detail.tags} />
+            <a
+              href={detail.product.url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              쇼핑몰에서 상품 보기
+            </a>
+            <VoteButtons
+              post={detail}
+              loggedIn={!!viewer}
+              login={() => {
+                setDetail(null);
+                router.push("/login");
+              }}
+              update={update}
+            />
+            <Discussion
+              key={detail.id}
+              target={{ kind: "community", postId: detail.id }}
+            />
+          </Modal>
         )}
-        <footer className={styles.footer}>
-          <strong>Buy or Not</strong>
-          <p>좋은 선택은, 함께.</p>
-          <span>© 2026 BUY OR NOT · COMMUNITY</span>
-        </footer>
-      </main>
-      {login && (
-        <LoginModal
-          close={() => setLogin(false)}
-          signedIn={async () => {
-            await refresh();
-            setLogin(false);
-          }}
-        />
-      )}
+        {remove && (
+          <Modal title="고민을 삭제할까요?" close={() => setRemove(null)}>
+            <p>삭제한 게시글은 피드에서 사라집니다.</p>
+            <button
+              className={styles.primary}
+              disabled={busy}
+              onClick={destroy}
+            >
+              삭제하기
+            </button>
+          </Modal>
+        )}
+      </div>
       {form && (
         <PostForm
           post={form.post}
@@ -324,59 +410,6 @@ export default function Community() {
           }}
         />
       )}
-      {detail && (
-        <Modal
-          title="살말 고민"
-          close={closeDetail}
-          actions={
-            <>
-              <ShareButton key={detail.id} post={detail} />
-              <PostOwnerMenu
-                key={`owner-${detail.id}`}
-                isOwner={detail.authorId === viewer?.id}
-                edit={() => {
-                  setForm({ url: detail.product.url, post: detail });
-                  setDetail(null);
-                }}
-                remove={() => {
-                  setRemove(detail);
-                  setDetail(null);
-                }}
-              />
-            </>
-          }
-        >
-          <p className={styles.eyebrow}>
-            {detail.nickname} · {detail.category}
-          </p>
-          <h3>{detail.product.name}</h3>
-          <p>{detail.concern}</p>
-          <a
-            href={detail.product.url}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            쇼핑몰에서 상품 보기 ↗
-          </a>
-          <VoteButtons
-            post={detail}
-            loggedIn={!!viewer}
-            login={() => {
-              setDetail(null);
-              setLogin(true);
-            }}
-            update={update}
-          />
-        </Modal>
-      )}
-      {remove && (
-        <Modal title="고민을 삭제할까요?" close={() => setRemove(null)}>
-          <p>삭제한 게시글은 피드에서 사라집니다.</p>
-          <button className={styles.primary} disabled={busy} onClick={destroy}>
-            삭제하기
-          </button>
-        </Modal>
-      )}
-    </div>
+    </>
   );
 }

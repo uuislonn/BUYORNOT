@@ -20,36 +20,12 @@ export function localAccountActivity(
     .list(profile)
     .filter((post) => post.authorId !== profile.id)
     .slice(0, 40);
-  for (const [i, post] of posts.slice(0, 10).entries()) {
-    const id = `member-story-${i}`;
-    if (!store.posts.has(id))
-      store.posts.set(id, {
-        ...post,
-        id,
-        authorId: profile.id,
-        nickname: profile.nickname,
-        concern: [
-          "평소 입는 스타일에 잘 맞을까요? 오래 활용할 수 있을지 고민이에요.",
-          "비슷한 제품과 비교 중인데 어떤 선택이 좋을까요?",
-          "가격과 활용도를 생각했을 때 구매해도 괜찮을까요?",
-        ][i % 3],
-        createdAt: new Date(Date.now() - i * 86400000).toISOString(),
-        updatedAt: new Date().toISOString(),
-        buy: 0,
-        not: 0,
-        deletedAt: null,
-      });
-  }
   for (const [i, post] of posts.slice(0, 12).entries()) {
     if (!post.myVote) store.vote(post.id, i % 3 === 0 ? "NOT" : "BUY", profile);
   }
   new FileCommunityPersistence(
     join(process.cwd(), ".data", "community.json"),
-  ).write({
-    version: 1,
-    posts: [...store.posts.values()],
-    votes: [...store.votes],
-  });
+  ).write(store.snapshot());
   const texts = [
     "평소 스타일에도 잘 어울릴 것 같아요!",
     "비슷한 제품 써봤는데 활용도가 좋았어요.",

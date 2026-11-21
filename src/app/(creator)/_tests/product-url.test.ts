@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   formatPrice,
+  productIdentity,
   getAffiliateLink,
   validateProductUrl,
 } from "../_lib/product-url";
@@ -53,4 +54,17 @@ describe("mock product URL guard (no outbound fetch)", () => {
     expect(formatPrice(129000)).toBe("129,000원");
     expect(formatPrice(null)).toBe("가격 확인 필요");
   });
+});
+
+it("matches different Cafe24 links to the same store's product, including category and tracking paths", () => {
+  expect(
+    productIdentity(
+      "https://www.deinet.co.kr/product/cap/2818/category/87/display/1/?utm_source=shop",
+    ),
+  ).toBe(
+    productIdentity("https://deinet.co.kr/product/detail.html?product_no=2818"),
+  );
+  expect(productIdentity("https://other.co.kr/product/cap/2818")).not.toBe(
+    productIdentity("https://deinet.co.kr/product/cap/2818"),
+  );
 });

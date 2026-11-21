@@ -1,3 +1,9 @@
+import {
+  hasStorefrontProductPath,
+  isPublicProductHostname,
+  oliveYoungProductUrl,
+} from "../../app/(creator)/_lib/product-url";
+
 // Exact host matching rejects IP literals, private addresses, userinfo and spoofed subdomains.
 export const allowedHosts = [
   "www.musinsa.com",
@@ -30,16 +36,21 @@ export function validateProductUrl(input: string): URL {
     url.username ||
     url.password ||
     url.port ||
-    !allowedHosts.includes(url.hostname)
+    !isPublicProductHostname(url.hostname) ||
+    (!allowedHosts.includes(url.hostname) && !hasStorefrontProductPath(url))
   )
-    throw new Error("지원하는 쇼핑몰의 HTTPS 상품 링크만 사용할 수 있습니다.");
+    throw new Error("공개 상품 상세 페이지의 HTTPS 링크를 입력해 주세요.");
   url.hash = "";
-  if (url.hostname === "m.musinsa.com") url.hostname = "www.musinsa.com";
-  if (url.hostname === "m.29cm.co.kr") url.hostname = "www.29cm.co.kr";
-  if (["oliveyoung.co.kr", "m.oliveyoung.co.kr"].includes(url.hostname)) {
-    url.hostname = "www.oliveyoung.co.kr";
-    url.pathname = url.pathname.replace(/^\/m\//, "/store/");
-  }
+  if (["musinsa.com", "m.musinsa.com"].includes(url.hostname))
+    url.hostname = "www.musinsa.com";
+  if (["29cm.co.kr", "m.29cm.co.kr"].includes(url.hostname))
+    url.hostname = "www.29cm.co.kr";
+  if (
+    ["oliveyoung.co.kr", "m.oliveyoung.co.kr", "www.oliveyoung.co.kr"].includes(
+      url.hostname,
+    )
+  )
+    return oliveYoungProductUrl(url);
   if (["www.musinsa.com", "musinsa.com"].includes(url.hostname)) {
     const legacy = url.pathname.match(
       /^\/app\/(?:goods|product\/detail)\/(\d+)(?:\/0)?\/?$/,
@@ -49,6 +60,14 @@ export function validateProductUrl(input: string): URL {
   if (["www.29cm.co.kr", "29cm.co.kr"].includes(url.hostname)) {
     const legacy = url.pathname.match(/^\/product\/(\d+)\/?$/);
     if (legacy) url.pathname = `/products/${legacy[1]}`;
+  }
+  if (!allowedHosts.includes(url.hostname)) {
+    for (const key of [...url.searchParams.keys()]) {
+      if (/^(utm_|fbclid$|gclid$|ref$|affiliate)/i.test(key))
+        url.searchParams.delete(key);
+    }
+    url.searchParams.sort();
+    url.pathname = url.pathname.replace(/\/+$/, "") || "/";
   }
   return url;
 }

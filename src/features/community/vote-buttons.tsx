@@ -3,6 +3,30 @@ import { useState } from "react";
 import { votePost } from "./actions";
 import type { Choice, FeedPost } from "./types";
 import styles from "./community.module.css";
+export function VoteResults({ buy, not }: Pick<FeedPost, "buy" | "not">) {
+  const total = buy + not;
+  const percent = total ? Math.round((buy / total) * 100) : 0;
+  return (
+    <>
+      <div className={styles.results}>
+        <strong>BUY {percent}%</strong>
+        <span>{total.toLocaleString("ko-KR")}명 참여</span>
+        <span>NOT {total ? 100 - percent : 0}%</span>
+      </div>
+      <div
+        className={styles.track}
+        role="meter"
+        aria-label="BUY 투표 비율"
+        aria-valuenow={percent}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <span style={{ width: `${percent}%` }} />
+      </div>
+    </>
+  );
+}
+
 export function VoteButtons({
   post,
   loggedIn,
@@ -16,8 +40,6 @@ export function VoteButtons({
 }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
-  const total = post.buy + post.not;
-  const percent = total ? Math.round((post.buy / total) * 100) : 0;
   async function vote(choice: Choice) {
     if (!loggedIn) return login();
     if (pending) return;
@@ -48,28 +70,14 @@ export function VoteButtons({
   }
   return (
     <div className={styles.votes}>
-      <div className={styles.results}>
-        <strong>BUY {percent}%</strong>
-        <span>{total.toLocaleString("ko-KR")}명 참여</span>
-        <span>NOT {total ? 100 - percent : 0}%</span>
-      </div>
-      <div
-        className={styles.track}
-        role="meter"
-        aria-label="BUY 투표 비율"
-        aria-valuenow={percent}
-        aria-valuemin={0}
-        aria-valuemax={100}
-      >
-        <span style={{ width: `${percent}%` }} />
-      </div>
+      <VoteResults buy={post.buy} not={post.not} />
       <div className={styles.voteRow}>
         <button
           disabled={pending}
           aria-pressed={post.myVote === "BUY"}
           onClick={() => vote("BUY")}
         >
-          ↗ BUY {post.myVote === "BUY" && "✓"}
+          BUY {post.myVote === "BUY" && "✓"}
         </button>
         <button
           disabled={pending}

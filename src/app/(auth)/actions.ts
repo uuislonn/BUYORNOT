@@ -2,12 +2,13 @@
 import {
   loginLocalTest,
   logoutLocalTest,
-  localTestEnabled,
   localTestProfile,
 } from "../../lib/auth/local-test";
+import { resolveUsername } from "../../lib/auth/username-server";
 import { headers, cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { authClient, currentUser } from "../../lib/auth/server";
+import { usernameError, type UsernameResult } from "../../lib/auth/username";
 import {
   authConfig,
   passwordError,
@@ -15,6 +16,34 @@ import {
   kakaoConfigured,
 } from "../../lib/auth/config";
 export type AuthResult = { message: string; ok?: boolean };
+export async function checkUsername(value: string): Promise<UsernameResult> {
+  const invalid = usernameError(value);
+  if (invalid) return { status: "error", message: invalid };
+  if (!authConfig())
+    return {
+      status: "error",
+      message: "인증 서비스 연결 후 확인할 수 있어요.",
+    };
+  try {
+    const client = await authClient();
+    const { data, error } = await client.rpc("username_available", {
+      candidate: value.trim(),
+    });
+    if (error || typeof data !== "boolean")
+      return {
+        status: "error",
+        message: "중복 확인에 실패했어요. 잠시 후 다시 시도해 주세요.",
+      };
+    return data
+      ? { status: "available", message: "사용 가능한 아이디입니다." }
+      : { status: "duplicate", message: "이미 사용 중인 아이디입니다." };
+  } catch {
+    return {
+      status: "error",
+      message: "중복 확인에 실패했어요. 잠시 후 다시 시도해 주세요.",
+    };
+  }
+}
 async function callback(reset = false) {
   // Use a configured canonical origin in production, never an arbitrary forwarded host.
   const configured = process.env.NEXT_PUBLIC_SITE_URL;
@@ -40,20 +69,27 @@ export async function submitAuth(
     ))
   )
     redirect("/account");
-  if (
-    mode === "login" &&
-    localTestEnabled() &&
-    !String(form.get("email") || "").includes("@")
-  )
-    return { message: "아이디 또는 비밀번호를 확인해 주세요." };
   if (!authConfig())
     return {
       message: "로그인 서비스 연결 설정이 필요해요. 관리자에게 문의해 주세요.",
     };
-  const email = String(form.get("email") || "")
+  let email = String(form.get("email") || "")
     .trim()
     .toLowerCase();
   const password = String(form.get("password") || "");
+  if (mode === "login" && !email.includes("@")) {
+    if (usernameError(email))
+      return { message: "아이디 또는 비밀번호를 확인해 주세요." };
+    try {
+      email = (await resolveUsername(email)) || "";
+    } catch {
+      return {
+        message:
+          "아이디 로그인에 연결하지 못했어요. 이메일로 로그인하거나 잠시 후 다시 시도해 주세요.",
+      };
+    }
+    if (!email) return { message: "아이디 또는 비밀번호를 확인해 주세요." };
+  }
   if (!["login", "signup", "reset", "update"].includes(mode))
     return { message: "잘못된 요청입니다." };
   if (
@@ -71,8 +107,15 @@ export async function submitAuth(
   )
     return { message: "비밀번호가 일치하지 않아요." };
   const nickname = String(form.get("nickname") || "").trim();
-  if (mode === "signup" && (nickname.length < 2 || nickname.length > 20))
-    return { message: "닉네임은 2~20자로 입력해 주세요." };
+  if (mode === "signup" && (nickname.length < 2 || nickname.length > 15))
+    return { message: "닉네임은 2~15자로 입력해 주세요." };
+  const username = String(form.get("username") || "")
+    .trim()
+    .toLowerCase();
+  if (mode === "signup") {
+    const result = await checkUsername(username);
+    if (result.status !== "available") return { message: result.message };
+  }
   let success = false;
   try {
     const client = await authClient();
@@ -80,7 +123,10 @@ export async function submitAuth(
       const { error, data } = await client.auth.signUp({
         email,
         password,
-        options: { data: { nickname }, emailRedirectTo: await callback() },
+        options: {
+          data: { nickname, username },
+          emailRedirectTo: await callback(),
+        },
       });
       if (error) return { message: authError(error.code) };
       if (!data.session)

@@ -1,3 +1,6 @@
+import { roomRecommendations } from "./recommendations";
+import { store } from "../../../features/community/store";
+import { directoryDatabase, addDirectoryRooms } from "./directory";
 import { localTestSession } from "../../../lib/auth/local-test";
 import { authClient } from "../../../lib/auth/server";
 import { memberProfile, readPostDatabase } from "./posts";
@@ -43,8 +46,15 @@ export async function readSession(): Promise<Session | null> {
   const room = session.db.creators.find((creator) => creator.id === "seoa");
   const owner = session.db.profiles.find((profile) => profile.id === "creator");
   if (room && ["seoa.archive", "i0cc0i"].includes(room.handle)) {
-    Object.assign(room, seed.creators[0]);
-    if (owner) Object.assign(owner, seed.profiles[0]);
+    Object.assign(
+      room,
+      seed.creators.find((creator) => creator.id === "seoa"),
+    );
+    if (owner)
+      Object.assign(
+        owner,
+        seed.profiles.find((profile) => profile.id === "creator"),
+      );
   }
   if (session.catalogVersion !== CATALOG_VERSION) {
     const previousCount =
@@ -105,14 +115,29 @@ export async function switchIdentity(identity: DemoIdentity): Promise<void> {
 }
 // TODO: connect to lib/supabase — replace session mock with verified auth.getUser() + RLS-backed data access.
 export function publicDatabase(): Database {
-  return createSeed();
+  return directoryDatabase();
+}
+
+export function withRequestViews(room: Snapshot): Snapshot {
+  return {
+    ...room,
+    recommendations: roomRecommendations(room.creator.id, room.requests),
+    requests: room.requests.map((request) => ({
+      ...request,
+      views: store.curationViewCount(room.creator.id, request.id),
+    })),
+  };
 }
 
 export async function readRoomSnapshot(creatorId: string): Promise<Snapshot> {
+  return withRequestViews(await readRoom(creatorId));
+}
+
+async function readRoom(creatorId: string): Promise<Snapshot> {
   const local = await localTestSession();
   if (local)
     return {
-      ...snapshot(local.db, local.actorId, creatorId, false),
+      ...snapshot(addDirectoryRooms(local.db), local.actorId, creatorId, false),
       postsEnabled: true,
       localTest: true,
     };
@@ -131,7 +156,7 @@ export async function readRoomSnapshot(creatorId: string): Promise<Snapshot> {
   }
   const session = await readSession();
   return snapshot(
-    session?.db ?? publicDatabase(),
+    session ? addDirectoryRooms(session.db) : publicDatabase(),
     session?.actorId ?? null,
     creatorId,
     demoEnabled(),

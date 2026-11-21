@@ -46,6 +46,12 @@ export async function localTestProfile(): Promise<Profile | null> {
   const cfg = config();
   const id = sessionIdentity(token, cfg.secret, Date.now());
   const account = cfg.accounts.find((a) => a.id === id);
+  if (account?.role === "CREATOR")
+    return (
+      localTestDatabase().profiles.find(
+        (profile) => profile.id === account.id,
+      ) ?? null
+    );
   return account
     ? {
         id: account.id,
@@ -68,16 +74,33 @@ export function localTestDatabase() {
     const db: Database = existsSync(path)
       ? JSON.parse(readFileSync(path, "utf8"))
       : createSeed();
+    const source = createSeed();
+    const soal = source.creators.find((room) => room.id === "seoa")!;
+    const soalOwner = source.profiles.find(
+      (profile) => profile.id === soal.ownerId,
+    )!;
     for (const a of config().accounts) {
+      const previous = db.profiles.find((profile) => profile.id === a.id);
       db.profiles = db.profiles.filter((p) => p.id !== a.id);
       db.profiles.push({
         id: a.id,
-        nickname: a.nickname,
+        nickname:
+          a.role === "CREATOR"
+            ? previous?.nickname && previous.nickname !== "크리에이터 테스트"
+              ? previous.nickname
+              : soalOwner.nickname
+            : a.nickname,
         role: a.role,
-        avatar: "",
+        avatar:
+          a.role === "CREATOR"
+            ? previous?.avatar || soalOwner.avatar
+            : (previous?.avatar ?? ""),
         verified: false,
       });
-      if (a.role === "CREATOR") db.creators[0].ownerId = a.id;
+      if (a.role === "CREATOR") {
+        const room = db.creators.find((room) => room.id === "seoa");
+        if (room) room.ownerId = a.id;
+      }
     }
     root.buyornotLocalTestDb = db;
     root.buyornotLocalTestMtime = mtime;

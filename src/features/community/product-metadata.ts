@@ -1,3 +1,9 @@
+import { validateProductImageUrl } from "../../app/(creator)/_lib/product-url";
+import {
+  offerOriginalPrice,
+  productPricing,
+} from "../../app/(creator)/_lib/product-price";
+import { allowedHosts } from "./product";
 import type { Product } from "./types";
 
 type JsonObject = Record<string, unknown>;
@@ -70,10 +76,22 @@ function imageUrl(value: unknown, base: URL): string {
       "image.oliveyoung.co.kr",
       "img.ssfshop.com",
     ];
-    return host === base.hostname || hosts.includes(host) ? url.href : "";
+    if (host === base.hostname || hosts.includes(host)) return url.href;
+    return validateProductImageUrl(url.href, base.href);
   } catch {
     return "";
   }
+}
+export function validateCommunityProductImage(
+  value: string,
+  productUrl: string,
+) {
+  const image = /^https:\/\//i.test(value)
+    ? imageUrl(value, new URL(productUrl))
+    : "";
+  if (!image)
+    throw new Error("쇼핑몰 상품 이미지의 HTTPS 주소를 입력해 주세요.");
+  return image;
 }
 function amount(value: unknown): number | null {
   if (typeof value !== "number" && typeof value !== "string") return null;
@@ -91,7 +109,11 @@ function products(value: unknown): JsonObject[] {
   return [...products(data["@graph"]), ...products(data.mainEntity)];
 }
 
-export function parseProductMetadata(html: string, url: URL): Product {
+export function parseProductMetadata(
+  html: string,
+  url: URL,
+  allowMissingPrice = false,
+): Product {
   const meta = new Map<string, string>();
   for (const match of html.matchAll(/<meta\b[^>]*>/gi)) {
     const attr = attributes(match[0]);
@@ -111,7 +133,9 @@ export function parseProductMetadata(html: string, url: URL): Product {
       /* Ignore invalid unrelated JSON-LD. */
     }
   }
-  const id = url.pathname.match(/\/(?:products?|goods)\/(\d+)\/?$/)?.[1];
+  const id = allowedHosts.includes(url.hostname)
+    ? url.pathname.match(/\/(?:products?|goods)\/(\d+)\/?$/)?.[1]
+    : undefined;
   const candidate =
     (id
       ? candidates.find(
@@ -122,6 +146,12 @@ export function parseProductMetadata(html: string, url: URL): Product {
     throw new Error(
       "링크와 상품 정보가 일치하지 않습니다. 상품 상세 주소를 다시 확인해 주세요.",
     );
+  if (
+    !candidate &&
+    !allowedHosts.includes(url.hostname) &&
+    meta.get("og:type") !== "product"
+  )
+    throw new Error("상품 상세 페이지에서 공개 상품 정보를 찾지 못했어요.");
   const rawOffers = candidate?.offers;
   const offers = (Array.isArray(rawOffers) ? rawOffers : [rawOffers])
     .map(object)
@@ -137,17 +167,34 @@ export function parseProductMetadata(html: string, url: URL): Product {
   const name = text(candidate?.name ?? meta.get("og:title"));
   const image =
     imageUrl(candidate?.image, url) || imageUrl(meta.get("og:image"), url);
-  const price = amount(
+  const saleCurrency = meta.get("product:sale_price:currency");
+  const salePrice =
+    !saleCurrency || saleCurrency.toUpperCase() === "KRW"
+      ? amount(meta.get("product:sale_price:amount"))
+      : null;
+  const rawPrice =
+    salePrice ??
     offer?.price ??
-      offer?.lowPrice ??
-      meta.get("product:price:amount") ??
-      meta.get("og:price:amount"),
+    offer?.lowPrice ??
+    meta.get("product:price:amount") ??
+    meta.get("og:price:amount");
+  const pricing = productPricing(
+    amount(rawPrice),
+    offerOriginalPrice(offer?.priceSpecification) ??
+      meta.get("product:price:normal_price") ??
+      meta.get("product:original_price:amount") ??
+      (salePrice !== null ? meta.get("product:price:amount") : undefined),
+    meta.get("product:price:sale_rate"),
   );
+  const { price, originalPrice, discountRate } = pricing;
   const brandObject = object(candidate?.brand);
   const brand = text(
-    brandObject?.name ?? candidate?.brand ?? meta.get("product:brand"),
+    brandObject?.name ??
+      candidate?.brand ??
+      meta.get("product:brand") ??
+      meta.get("og:site_name"),
   );
-  if (!name || !image || price === null)
+  if (!name || !image || (price === null && !allowMissingPrice))
     throw new Error(
       "이 상품의 이름·가격·사진을 모두 읽지 못했습니다. 쇼핑몰의 상품 상세 페이지 링크로 다시 시도해 주세요.",
     );
@@ -156,7 +203,8 @@ export function parseProductMetadata(html: string, url: URL): Product {
     domain: url.hostname,
     name,
     image,
-    price,
+    price: price ?? 0,
+    ...(discountRate !== null ? { originalPrice, discountRate } : {}),
     currency: "KRW",
     brand,
   };

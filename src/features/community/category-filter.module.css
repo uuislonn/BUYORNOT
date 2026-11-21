@@ -1,0 +1,58 @@
+.scroll {
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+  border-radius: 999px;
+}
+.track {
+  position: relative;
+  display: flex;
+  width: max-content;
+  min-width: max-content;
+  padding: 3px;
+  border-radius: 999px;
+  background: #e8e8ed;
+  isolation: isolate;
+}
+.indicator {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 0;
+  z-index: -1;
+  border-radius: 999px;
+  background: #1d1d1d;
+  pointer-events: none;
+  transition:
+    transform 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    width 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.track.track button {
+  flex: 1 0 auto;
+  min-height: 28px;
+  border: 0;
+  border-radius: 999px;
+  padding: 5px 16px;
+  background: transparent;
+  color: #4b4b4d;
+  font:
+    500 12px / 1.5 "Pretendard",
+    Arial,
+    "Noto Sans KR",
+    sans-serif;
+  letter-spacing: normal;
+  white-space: nowrap;
+  transition: color 200ms ease;
+}
+.track.track button[aria-pressed="true"] {
+  color: #fff;
+}
+.track.track button:focus-visible {
+  outline-offset: -3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .indicator,
+  .track button {
+    transition: none;
+  }
+}

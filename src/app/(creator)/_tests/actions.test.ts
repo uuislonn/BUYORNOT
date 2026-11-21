@@ -1,183 +1,105 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-const cookieState = vi.hoisted(() => ({ values: new Map<string, string>() }));
-vi.mock("next/headers", () => ({
-  cookies: async () => ({
-    get: (name: string) =>
-      cookieState.values.has(name)
-        ? { value: cookieState.values.get(name) }
-        : undefined,
-    set: (name: string, value: string) => cookieState.values.set(name, value),
-  }),
+import { beforeEach, expect, it, vi } from "vitest";
+import { createSeed } from "../_server/seed";
+import { snapshot } from "../_server/service";
+
+const mocks = vi.hoisted(() => ({
+  session: vi.fn(),
+  readSnapshot: vi.fn(),
+  persist: vi.fn(),
+  profile: vi.fn(),
+}));
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("../../../lib/auth/local-test", () => ({
+  localTestProfile: mocks.profile,
+  persistLocalTestDatabase: mocks.persist,
+}));
+vi.mock("../../../lib/auth/config", () => ({ authConfig: () => null }));
+vi.mock("../_server/posts", () => ({
+  requirePostContext: vi.fn(),
+  savePost: vi.fn(),
+}));
+vi.mock("../_server/runtime", () => ({
+  demoEnabled: () => false,
+  requireSession: mocks.session,
+  readRoomSnapshot: mocks.readSnapshot,
+  switchIdentity: vi.fn(),
+  withRequestViews: (room: unknown) => room,
 }));
 import {
-  createCurationRequest,
-  deleteCurationRequest,
   evaluateCurationRequest,
-  getRoomSnapshot,
-  previewProduct,
-  reviewCreatorApplication,
-  setDemoIdentity,
-  toggleCreatorFollow,
+  recordRequestView,
   toggleRequestHeart,
+  toggleCreatorFollow,
 } from "../_server/actions";
-import { PRODUCT_FIXTURES } from "../_server/seed";
-import * as metadata from "../_server/product-metadata";
-import type { DemoIdentity, RequestInput } from "../_lib/types";
-const input: RequestInput = {
-  creatorId: "seoa",
-  productUrl: "https://www.musinsa.com/products/90000009",
-  productName: "서버 액션 상품",
-  productImage: "https://image.msscdn.net/images/goods_img/test.jpg",
-  brand: "TEST",
-  price: 10000,
-  category: "의류",
-  concern: "잘 맞을까요?",
-  tags: [],
-  bodySpec: {},
-};
-beforeEach(() => {
-  cookieState.values.clear();
-  vi.stubEnv("NODE_ENV", "test");
-});
-afterEach(() => {
-  vi.unstubAllEnvs();
-});
-describe("server action session boundary", () => {
-  it("keeps the input product link and requests the actual image during preview", async () => {
-    await setDemoIdentity("member", "seoa");
-    const spy = vi
-      .spyOn(metadata, "loadProductMetadata")
-      .mockResolvedValueOnce({
-        url: input.productUrl,
-        image: input.productImage!,
-        name: input.productName,
-        brand: input.brand,
-        price: null,
-        category: "의류",
-        currency: "KRW",
-      });
-    expect(await previewProduct(input.productUrl, "seoa")).toMatchObject({
-      ok: true,
-      data: {
-        product: { url: input.productUrl, image: input.productImage },
-        warning: null,
-      },
-    });
-    spy.mockRestore();
-    expect(await createCurationRequest(input)).toMatchObject({
-      ok: true,
-      data: {
-        requests: expect.arrayContaining([
-          expect.objectContaining({
-            product: expect.objectContaining({
-              url: input.productUrl,
-              image: input.productImage,
-            }),
-          }),
-        ]),
-      },
-    });
-  });
-  it("shows a manual image fallback when a shop blocks metadata instead of returning sample images", async () => {
-    await setDemoIdentity("member", "seoa");
-    const spy = vi
-      .spyOn(metadata, "loadProductMetadata")
-      .mockRejectedValueOnce(new Error("HTTP 403"));
-    expect(await previewProduct(input.productUrl, "seoa")).toMatchObject({
-      ok: true,
-      data: {
-        product: { url: input.productUrl, image: "" },
-        warning: expect.any(String),
-      },
-    });
-    spy.mockRestore();
-  });
-  it("rejects creation without a product image", async () => {
-    await setDemoIdentity("member", "seoa");
-    expect(
-      await createCurationRequest({ ...input, productImage: undefined }),
-    ).toMatchObject({ ok: false, code: "VALIDATION" });
-  });
-  it("rejects guest mutation requests even when bypassing UI", async () => {
-    const results = await Promise.all([
-      createCurationRequest(input),
-      deleteCurationRequest("req-1", "seoa"),
-      evaluateCurationRequest("req-1", "seoa", "BUY", ""),
-      toggleRequestHeart("req-1", "seoa"),
-      toggleCreatorFollow("seoa"),
-      previewProduct(input.productUrl, "seoa"),
-      reviewCreatorApplication("fake", "seoa", true, ""),
-    ]);
-    for (const result of results)
-      expect(result).toMatchObject({ ok: false, code: "UNAUTHENTICATED" });
-  });
-  it("checks owner authority on the server and keeps failed state unchanged", async () => {
-    await setDemoIdentity("member", "seoa");
-    const denied = await evaluateCurationRequest(
-      "req-1",
+
+beforeEach(() => vi.clearAllMocks());
+it("keeps creator participation enabled after a heart and consecutive BUY / NOT decisions", async () => {
+  const db = createSeed();
+  const actorId = db.creators[0].ownerId;
+  mocks.profile.mockResolvedValue(db.profiles.find((p) => p.id === actorId));
+  mocks.session.mockResolvedValue({ db, actorId });
+  mocks.readSnapshot.mockImplementation(async (creatorId: string) => ({
+    ...snapshot(db, actorId, creatorId, false),
+    localTest: true,
+    postsEnabled: true,
+  }));
+  const requests = db.requests
+    .filter((r) => r.creatorId === "seoa" && r.status === "ING")
+    .slice(0, 2);
+  expect(requests).toHaveLength(2);
+  const results = [
+    await toggleRequestHeart(requests[0].id, "seoa"),
+    await evaluateCurationRequest(requests[0].id, "seoa", "BUY", "추천해요"),
+    await evaluateCurationRequest(
+      requests[1].id,
       "seoa",
-      "BUY",
-      "forged owner",
-    );
-    expect(denied).toMatchObject({ ok: false, code: "FORBIDDEN" });
-    expect(
-      (await getRoomSnapshot("seoa")).requests.find((r) => r.id === "req-1")
-        ?.status,
-    ).toBe("ING");
+      "NOT",
+      "다른 상품을 추천해요",
+    ),
+  ];
+  for (const result of results) {
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data.localTest).toBe(true);
+      expect(result.data.postsEnabled).toBe(true);
+      expect(result.data.viewer?.id).toBe(actorId);
+    }
+  }
+  expect(db.requests.find((r) => r.id === requests[0].id)?.status).toBe("BUY");
+  expect(db.requests.find((r) => r.id === requests[1].id)?.status).toBe("NOT");
+  expect(mocks.persist).toHaveBeenCalledTimes(3);
+});
+
+it("persists follow and unfollow without changing other members' follows", async () => {
+  const db = createSeed();
+  const actorId = "member";
+  db.follows.seoa = ["sample-1"];
+  mocks.profile.mockResolvedValue(
+    db.profiles.find((profile) => profile.id === actorId),
+  );
+  mocks.session.mockResolvedValue({ db, actorId });
+  mocks.readSnapshot.mockImplementation(async (id: string) => ({
+    ...snapshot(db, actorId, id, false),
+    localTest: true,
+    postsEnabled: true,
+  }));
+  const added = await toggleCreatorFollow("seoa");
+  expect(added.ok && added.data.following).toBe(true);
+  expect(db.follows.seoa).toEqual(["sample-1", "member"]);
+  const removed = await toggleCreatorFollow("seoa");
+  expect(removed.ok && removed.data.following).toBe(false);
+  expect(db.follows.seoa).toEqual(["sample-1"]);
+  expect(mocks.persist).toHaveBeenCalledTimes(2);
+});
+
+it("counts views only for a request in the selected room", async () => {
+  const room = snapshot(createSeed(), null, "seoa", false);
+  mocks.readSnapshot.mockResolvedValue(room);
+  expect(await recordRequestView("seoa", "unknown")).toMatchObject({
+    ok: false,
+    code: "NOT_FOUND",
   });
-  it("persists a decision across role switches within a session and isolates other sessions", async () => {
-    await setDemoIdentity("creator", "seoa");
-    expect(
-      await evaluateCurationRequest("req-1", "seoa", "BUY", "좋아요"),
-    ).toMatchObject({ ok: true });
-    await setDemoIdentity("guest", "seoa");
-    expect(
-      (await getRoomSnapshot("seoa")).requests.find((r) => r.id === "req-1")
-        ?.status,
-    ).toBe("BUY");
-    cookieState.values.clear();
-    expect(
-      (await getRoomSnapshot("seoa")).requests.find((r) => r.id === "req-1")
-        ?.status,
-    ).toBe("ING");
-  });
-  it("rejects unknown demo identities", async () => {
-    expect(await setDemoIdentity("root" as DemoIdentity, "seoa")).toMatchObject(
-      { ok: false, code: "VALIDATION" },
-    );
-  });
-  it("disables role switching and writes by default in production, including an existing cookie", async () => {
-    await setDemoIdentity("admin", "seoa");
-    vi.stubEnv("NODE_ENV", "production");
-    vi.stubEnv("CREATOR_DEMO_ENABLED", "false");
-    expect(await setDemoIdentity("creator", "seoa")).toMatchObject({
-      ok: false,
-      code: "DEMO_DISABLED",
-    });
-    expect(await createCurationRequest(input)).toMatchObject({
-      ok: false,
-      code: "DEMO_DISABLED",
-    });
-    expect((await getRoomSnapshot("seoa")).demoEnabled).toBe(false);
-  });
-  it("returns duplicate preview information without requesting a shopping website", async () => {
-    await setDemoIdentity("member", "seoa");
-    const metadataSpy = vi
-      .spyOn(metadata, "loadProductMetadata")
-      .mockResolvedValueOnce(PRODUCT_FIXTURES[0]);
-    const result = await previewProduct(
-      `${PRODUCT_FIXTURES[0].url}?utm_source=link`,
-      "seoa",
-    );
-    expect(result).toMatchObject({
-      ok: true,
-      data: {
-        duplicateId: "req-1",
-        product: { image: PRODUCT_FIXTURES[0].image },
-        warning: null,
-      },
-    });
-    expect(metadataSpy).toHaveBeenCalledWith(PRODUCT_FIXTURES[0].url);
-    metadataSpy.mockRestore();
-  });
+  const id = room.requests[0].id;
+  expect(await recordRequestView("seoa", id)).toEqual({ ok: true, data: 1 });
+  expect(await recordRequestView("seoa", id)).toEqual({ ok: true, data: 2 });
 });

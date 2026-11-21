@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { AccountActivity } from "./activity-types";
+import { LiveProductPrice } from "../../(creator)/_components/live-product-price";
 import { SamplePhoto } from "../../(creator)/_components/sample-photo";
 import s from "./mypage.module.css";
 export function ActivityRecords({
@@ -7,7 +8,7 @@ export function ActivityRecords({
   kind,
 }: {
   activity: AccountActivity;
-  kind: "글" | "상품" | "작성한 댓글" | "댓글 단 글" | "알림";
+  kind: "글" | "상품" | "작성한 댓글" | "알림";
 }) {
   if (kind === "알림")
     return (
@@ -24,7 +25,7 @@ export function ActivityRecords({
         ))}
       </div>
     );
-  if (kind === "작성한 댓글" || kind === "댓글 단 글")
+  if (kind === "작성한 댓글")
     return (
       <div>
         {activity.comments.map((item) => (
@@ -43,32 +44,44 @@ export function ActivityRecords({
     );
   const posts = kind === "상품" ? activity.savedProducts : activity.savedPosts;
   return (
-    <div className={s.creatorGrid}>
+    <div className={s.savedGrid}>
       {posts.map((post) => (
-        <article className={s.creatorCard} key={post.id}>
-          <div
-            style={{ height: 180, position: "relative", overflow: "hidden" }}
-          >
-            <SamplePhoto source={post.product.image} alt={post.product.name} />
+        <article className={s.savedCard} key={post.id}>
+          <div className={s.savedVisual}>
+            <SamplePhoto
+              source={post.product.image}
+              alt={post.product.name}
+              fit="cover"
+            />
           </div>
-          <small>
-            {post.product.brand} · {post.category}
-          </small>
-          <h3>{post.product.name}</h3>
-          <p>
-            {kind === "글"
-              ? post.concern
-              : `${post.product.price.toLocaleString("ko-KR")}원`}
-          </p>
-          <Link
-            href={
-              kind === "상품"
-                ? post.product.url
-                : `/community?post=${encodeURIComponent(post.id)}`
-            }
-          >
-            {kind === "상품" ? "상품 보러 가기" : "글 보러 가기"} ↗
-          </Link>
+          <div className={s.savedBody}>
+            <small>
+              {post.product.brand} · {post.category}
+            </small>
+            <h3>{post.product.name}</h3>
+            <p>
+              {kind === "글" ? (
+                post.concern
+              ) : (
+                <LiveProductPrice
+                  key={post.product.url}
+                  product={{
+                    ...post.product,
+                    price: post.product.price || null,
+                  }}
+                />
+              )}
+            </p>
+            <Link
+              href={
+                kind === "상품"
+                  ? post.product.url
+                  : `/community?post=${encodeURIComponent(post.id)}`
+              }
+            >
+              {kind === "상품" ? "상품 보러 가기" : "글 보러 가기"}
+            </Link>
+          </div>
         </article>
       ))}
     </div>

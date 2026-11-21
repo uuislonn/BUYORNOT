@@ -3,6 +3,7 @@ import {
   localTestProfile,
   persistLocalTestDatabase,
 } from "../../../lib/auth/local-test";
+import { store } from "../../../features/community/store";
 import { revalidatePath } from "next/cache";
 import { authConfig } from "../../../lib/auth/config";
 import { requirePostContext, savePost } from "./posts";
@@ -10,17 +11,22 @@ import type {
   ApplicationInput,
   Decision,
   DemoIdentity,
+  Product,
   RequestInput,
   Result,
   Snapshot,
 } from "../_lib/types";
-import { loadProductMetadata, validateProductPage } from "./product-metadata";
+import { validateProductPage } from "./product-metadata";
+import { loadProduct } from "../../../features/community/product-loader";
+import { productIdentity } from "../_lib/product-url";
+import { itemCategory } from "../_lib/product-category";
 import * as service from "./service";
 import {
   demoEnabled,
   readRoomSnapshot,
   requireSession,
   switchIdentity,
+  withRequestViews,
 } from "./runtime";
 export async function getRoomSnapshot(creatorId: string): Promise<Snapshot> {
   return readRoomSnapshot(creatorId);
@@ -53,13 +59,22 @@ async function mutate(
     // Validate the target room before mutation. Do not trust client actor IDs or roles.
     service.snapshot(session.db, session.actorId, creatorId, demoEnabled());
     fn(session);
-    if (await localTestProfile()) persistLocalTestDatabase();
-    return service.snapshot(
-      session.db,
-      session.actorId,
-      creatorId,
-      demoEnabled(),
+    if (await localTestProfile()) {
+      persistLocalTestDatabase();
+      // Return the same capabilities as the initial page load after every mutation.
+      return readRoomSnapshot(creatorId);
+    }
+    return withRequestViews(
+      service.snapshot(session.db, session.actorId, creatorId, demoEnabled()),
     );
+  });
+}
+export async function recordRequestView(creatorId: string, requestId: string) {
+  return result(async () => {
+    const room = await readRoomSnapshot(creatorId);
+    if (!room.requests.some((request) => request.id === requestId))
+      throw new service.ServiceError("NOT_FOUND", "고민을 찾을 수 없어요.");
+    return store.recordCurationView(room.creator.id, requestId);
   });
 }
 export async function setDemoIdentity(
@@ -71,23 +86,54 @@ export async function setDemoIdentity(
     return getRoomSnapshot(creatorId);
   });
 }
-export async function previewProduct(productUrl: string, creatorId: string) {
+export async function previewProduct(
+  productUrl: string,
+  creatorId: string,
+): Promise<
+  Result<{
+    product: Product;
+    duplicateId: string | null;
+    warning: string | null;
+  }>
+> {
   return result(async () => {
     const session =
       authConfig() && !(await localTestProfile())
         ? await requirePostContext(creatorId)
         : await requireSession();
     const url = validateProductPage(productUrl);
-    const duplicate = session.db.requests.find(
-      (r) =>
-        r.creatorId === creatorId &&
-        r.product.url === url &&
-        r.status !== "EXPIRED",
-    );
+    const identity = productIdentity(url);
+    const duplicate = session.db.requests.find((request) => {
+      if (request.creatorId !== creatorId || request.status === "EXPIRED")
+        return false;
+      try {
+        return (
+          productIdentity(validateProductPage(request.product.url)) === identity
+        );
+      } catch {
+        return false;
+      }
+    });
+    if (duplicate)
+      return {
+        product: duplicate.product,
+        duplicateId: duplicate.id,
+        warning: null,
+      };
     let product;
     let warning: string | null = null;
     try {
-      product = await loadProductMetadata(url);
+      const loaded = await loadProduct(url);
+      product = {
+        ...loaded,
+        name: loaded.name.slice(0, 100),
+        brand: loaded.brand.slice(0, 50) || new URL(url).hostname,
+        price: loaded.price || null,
+        category:
+          new URL(url).hostname === "www.oliveyoung.co.kr"
+            ? "뷰티"
+            : itemCategory(loaded.name),
+      };
     } catch {
       product = {
         url,
@@ -101,7 +147,7 @@ export async function previewProduct(productUrl: string, creatorId: string) {
       warning =
         "쇼핑몰에서 대표 이미지를 불러오지 못했어요. 상품 페이지의 첫 번째 이미지 주소와 상품명을 직접 입력해 주세요.";
     }
-    return { product, duplicateId: duplicate?.id ?? null, warning };
+    return { product, duplicateId: null, warning };
   });
 }
 export async function createCurationRequest(
@@ -174,6 +220,20 @@ export async function evaluateCurationRequest(
     service.evaluateRequest(s.db, s.actorId, id, decision, comment);
   });
 }
+export async function holdCurationRequest(
+  id: string,
+  creatorId: string,
+): Promise<Result<Snapshot>> {
+  return mutate(creatorId, (session) => {
+    if (
+      !session.db.requests.some(
+        (request) => request.id === id && request.creatorId === creatorId,
+      )
+    )
+      throw new service.ServiceError("NOT_FOUND", "요청을 찾을 수 없어요.");
+    service.holdRequest(session.db, session.actorId, id);
+  });
+}
 export async function toggleRequestHeart(
   id: string,
   creatorId: string,
@@ -213,4 +273,18 @@ export async function reviewCreatorApplication(
   return mutate(creatorId, (s) =>
     service.reviewApplication(s.db, s.actorId, id, approve, reason),
   );
+}
+
+export async function updateCreatorRoom(
+  creatorId: string,
+  input: { title: string; bio: string },
+): Promise<Result<Snapshot>> {
+  const response = await mutate(creatorId, ({ db, actorId }) =>
+    service.updateRoom(db, actorId, creatorId, input),
+  );
+  if (response.ok) {
+    revalidatePath(`/creators/${creatorId}`);
+    revalidatePath(`/creators/${creatorId}/manage`);
+  }
+  return response;
 }

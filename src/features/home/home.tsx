@@ -5,8 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { loadCommunity } from "../community/actions";
 import { SiteHeader } from "../../components/site-header";
-import { LoginModal } from "../community/login-modal";
-import { Modal } from "../community/modal";
 import styles from "./home.module.css";
 
 export default function Home() {
@@ -23,8 +21,6 @@ export default function Home() {
       active = false;
     };
   }, []);
-  const [login, setLogin] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
 
   return (
     <div className={styles.home}>
@@ -32,7 +28,7 @@ export default function Home() {
         currentPage="home"
         loggedIn={loggedIn}
         accountLabel={loggedIn ? "My Page" : undefined}
-        onAccount={() => (loggedIn ? router.push("/account") : setLogin(true))}
+        onAccount={() => router.push(loggedIn ? "/account" : "/login")}
       />
 
       <main className={styles.main}>
@@ -43,9 +39,12 @@ export default function Home() {
             <span>모두의 한 표를 만나보세요.</span>
           </h1>
           <div className={styles.heroActions}>
-            <button className={styles.button} onClick={() => setLogin(true)}>
-              Login
-            </button>
+            <Link
+              href={loggedIn ? "/account" : "/login"}
+              className={styles.button}
+            >
+              {loggedIn ? "My Page" : "Login"}
+            </Link>
             <Link href="/community" className={styles.outlineButton}>
               Explore the Feed
             </Link>
@@ -66,7 +65,7 @@ export default function Home() {
               </p>
               <button
                 className={styles.button}
-                onClick={() => router.push("/creators/seoa")}
+                onClick={() => router.push("/creators")}
               >
                 Curation Room
               </button>
@@ -120,66 +119,6 @@ export default function Home() {
           </div>
         </section>
       </main>
-
-      <footer className={styles.footer}>
-        <div className={styles.content}>
-          <Link href="/" className={styles.footerBrand}>
-            Buy or Not
-          </Link>
-          <p>Your next buy, decided together.</p>
-          <div className={styles.socials}>
-            <button
-              aria-label="Instagram 안내"
-              onClick={() => setNotice("Instagram")}
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                aria-hidden="true"
-              >
-                <rect x="3" y="3" width="18" height="18" rx="5" />
-                <circle cx="12" cy="12" r="4" />
-                <circle
-                  cx="17.5"
-                  cy="6.5"
-                  r="1"
-                  fill="currentColor"
-                  stroke="none"
-                />
-              </svg>
-            </button>
-            <button aria-label="X 안내" onClick={() => setNotice("X")}>
-              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </footer>
-
-      {login && (
-        <LoginModal
-          close={() => setLogin(false)}
-          signedIn={async () => {
-            setLogin(false);
-            router.push("/community");
-          }}
-        />
-      )}
-      {notice && (
-        <Modal title={notice} close={() => setNotice(null)}>
-          <p>
-            {notice === "Curation Room"
-              ? "크리에이터 큐레이션 룸을 준비하고 있어요. 곧 만나요!"
-              : "공식 SNS 채널을 준비하고 있어요. 곧 만나요!"}
-          </p>
-          <button className={styles.button} onClick={() => setNotice(null)}>
-            확인
-          </button>
-        </Modal>
-      )}
     </div>
   );
 }
