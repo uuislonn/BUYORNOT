@@ -1,0 +1,57 @@
+.folder {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.scene {
+  position: absolute;
+  width: 110%;
+  height: auto;
+  left: -5%;
+  bottom: -4%;
+  overflow: visible;
+  pointer-events: none;
+}
+.item {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.folder[data-open="true"] .glasses,
+.folder:focus-visible .glasses {
+  transform: translate(-100px, -140px) rotate(-6deg);
+}
+.folder[data-open="true"] .shoe,
+.folder:focus-visible .shoe {
+  transform: translate(-55px, -195px) rotate(5deg);
+}
+.folder[data-open="true"] .shirt,
+.folder:focus-visible .shirt {
+  transform: translate(-45px, -135px) rotate(5deg);
+}
+@media (hover: hover) and (pointer: fine) {
+  .folder:hover .glasses {
+    transform: translate(-100px, -140px) rotate(-6deg);
+  }
+  .folder:hover .shoe {
+    transform: translate(-55px, -195px) rotate(5deg);
+    transition-delay: 40ms;
+  }
+  .folder:hover .shirt {
+    transform: translate(-45px, -135px) rotate(5deg);
+    transition-delay: 80ms;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .folder .item,
+  .folder:hover .item,
+  .folder:focus-visible .item,
+  .folder[data-open="true"] .item {
+    transform: none;
+    transition: none;
+  }
+}

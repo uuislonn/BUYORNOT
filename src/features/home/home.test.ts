@@ -85,6 +85,16 @@ describe("홈과 커뮤니티 연결", () => {
       expect(html).not.toContain(encodeURIComponent(`/home/dial/${file}`));
     }
   });
+  it("소개의 작은 자리에 상품이 개별 레이어로 담긴 폴더를 표시한다", () => {
+    const html = renderToStaticMarkup(createElement(Home));
+    expect(html).toContain('aria-label="폴더 속 안경, 신발, 티셔츠 살펴보기"');
+    expect(html).toContain('aria-pressed="false"');
+    for (const layer of ["back", "front", "glasses", "shoe", "shirt"])
+      expect(html).toContain(`href="/home/folder/${layer}.png"`);
+    expect(html.indexOf('href="/home/folder/front.png"')).toBeGreaterThan(
+      html.indexOf('href="/home/folder/shoe.png"'),
+    );
+  });
   it("체크무늬 대신 교체용 이미지 컨테이너와 시안의 세 기능을 제공한다", () => {
     const html = renderToStaticMarkup(createElement(Home));
     expect(html).not.toContain("placeholder.png");

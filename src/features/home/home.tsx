@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { loadCommunity } from "../community/actions";
 import { SiteHeader } from "../../components/site-header";
 import { RotaryDial } from "./rotary-dial";
+import { ProductFolder } from "./product-folder";
 import { experiences, featureCards, homeImages } from "./home-content";
 import styles from "./home.module.css";
 
@@ -138,10 +139,7 @@ export default function Home() {
             }
           >
             <ImageSlot src={homeImages.story} className={styles.storyImage} />
-            <ImageSlot
-              src={homeImages.storyDetail}
-              className={styles.detailImage}
-            />
+            <ProductFolder className={styles.detailImage} />
           </div>
         </section>
 

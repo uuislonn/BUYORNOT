@@ -155,12 +155,8 @@
   left: -34%;
   border-radius: 13px;
   transform: rotate(-3.16deg);
-  background: #e4e5e2;
-  box-shadow: 0 12px 32px #00000008;
-  transition: transform 0.5s ease;
-}
-.collage:hover .detailImage {
-  transform: rotate(-1deg) translateY(-5px);
+  background: transparent;
+  box-shadow: none;
 }
 .experiences {
   width: min(1340px, calc(100% - 112px));
