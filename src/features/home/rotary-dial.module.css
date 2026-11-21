@@ -1,0 +1,170 @@
+.stage {
+  position: relative;
+  height: 0;
+  min-height: 0;
+  width: 100%;
+  container-type: size;
+  overflow: hidden;
+}
+.dial {
+  --dial-angle: 0deg;
+  position: relative;
+  width: 178cqh;
+  aspect-ratio: 1;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  border-radius: 50%;
+  outline: none;
+}
+.dial:focus-visible {
+  outline: 2px solid #0100fe;
+  outline-offset: -8px;
+}
+.rotor {
+  position: absolute;
+  inset: 0;
+  transform: rotate(var(--dial-angle));
+  will-change: transform;
+  user-select: none;
+  pointer-events: none;
+  clip-path: ellipse(44.4% 45% at 50.2% 50.5%);
+}
+.rotor::after {
+  content: "";
+  position: absolute;
+  left: 5.8%;
+  top: 5.5%;
+  width: 88.8%;
+  height: 90%;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 3px solid #bfc0c1;
+  box-shadow:
+    inset 0 0 0 1px #f7f7f7,
+    inset 0 0 0 3px #7779;
+  pointer-events: none;
+}
+.phone {
+  position: absolute;
+  display: block;
+  width: 104.8%;
+  height: 110.02%;
+  left: 0.5%;
+  top: 0.7%;
+}
+.hitArea {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.hitArea circle {
+  pointer-events: stroke;
+  touch-action: none;
+  cursor: grab;
+}
+.dial[data-dragging="true"] .hitArea circle {
+  cursor: grabbing;
+}
+.center {
+  position: absolute;
+  width: 43%;
+  aspect-ratio: 1;
+  top: 47.5%;
+  left: 49.5%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: transparent;
+
+  display: grid;
+  place-items: center;
+  z-index: 2;
+}
+.centerActions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 18px;
+}
+.centerActions a {
+  text-decoration: none;
+  font-size: clamp(11px, 1vw, 16px);
+  font-weight: 500;
+  padding: 9px 20px;
+  border-radius: 999px;
+  line-height: 1.25;
+  white-space: nowrap;
+  transition:
+    transform 0.2s,
+    background 0.2s,
+    color 0.2s;
+  text-align: center;
+}
+.centerActions .primary {
+  color: #fff;
+  background: #000;
+  border: 1px solid #000;
+}
+.centerActions .secondary {
+  color: #111;
+  border: 1px solid #111;
+  background: transparent;
+}
+.centerActions a:hover {
+  transform: translateY(-3px);
+}
+.centerActions .secondary:hover {
+  background: #000;
+  color: #fff;
+}
+.centerActions a:active {
+  transform: scale(0.97);
+}
+.centerActions a:focus-visible {
+  outline: 3px solid #0100fe;
+  outline-offset: 4px;
+}
+@media (max-width: 767px) {
+  .centerActions {
+    padding: 12px;
+    gap: 6px;
+    flex-direction: column;
+  }
+  .centerActions a {
+    padding: 7px 15px;
+    font-size: clamp(10px, 2.3vw, 14px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rotor {
+    will-change: auto;
+  }
+  .centerActions a {
+    transition: none;
+  }
+}
+
+.stop {
+  position: absolute;
+  width: 22.2%;
+  height: auto;
+  left: 73.1%;
+  top: 24.2%;
+  pointer-events: none;
+  z-index: 1;
+  user-select: none;
+}
+
+.screenReaderOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
