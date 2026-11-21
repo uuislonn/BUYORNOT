@@ -78,6 +78,7 @@ export function ProductCard({
             key={request.product.image}
             source={request.product.image}
             alt={request.product.name}
+            fit="cover"
           />
         ) : (
           <div className={s.imageFallback}>
@@ -91,8 +92,8 @@ export function ProductCard({
           <span>{request.product.name}</span>
           <ProductPrice product={request.product} />
         </span>
-        <span className={s.imageArrow} aria-hidden="true">
-          ↗
+        <span className={s.shoppingHover} aria-hidden="true">
+          <span>쇼핑몰에서 보기 ↗</span>
         </span>
       </a>
       <div className={s.cardBody}>

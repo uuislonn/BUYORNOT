@@ -4,7 +4,7 @@ import Link from "next/link";
 import styles from "./site-header.module.css";
 
 interface SiteHeaderProps {
-  currentPage: "home" | "community";
+  currentPage: "home" | "community" | "curation";
   onAccount: () => void;
   loggedIn?: boolean;
   busy?: boolean;
@@ -30,7 +30,12 @@ export function SiteHeader({
           <span>Buy or Not</span>
         </Link>
         <nav className={styles.nav} aria-label="주 메뉴">
-          <Link href="/creators/seoa">Curation Room</Link>
+          <Link
+            href="/creators/seoa"
+            aria-current={currentPage === "curation" ? "page" : undefined}
+          >
+            Curation Room
+          </Link>
           <Link
             href="/community"
             aria-current={currentPage === "community" ? "page" : undefined}

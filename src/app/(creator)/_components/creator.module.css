@@ -784,6 +784,7 @@
   background: #efeeeb;
 }
 .shopVisual > a {
+  position: relative;
   display: block;
   width: 100%;
   height: 100%;
@@ -792,6 +793,44 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+.shoppingHover {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  background: #0003;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+.shoppingHover > span {
+  padding: 10px 16px;
+  border-radius: 24px;
+  background: #111;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+}
+.productVisual:hover .shoppingHover,
+.productVisual:focus-visible .shoppingHover,
+.shopVisual > a:hover .shoppingHover,
+.shopVisual > a:focus-visible .shoppingHover {
+  opacity: 1;
+}
+@media (hover: none) {
+  .shoppingHover {
+    opacity: 1;
+    background: transparent;
+    align-items: end;
+    padding-bottom: 52px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shoppingHover {
+    transition: none;
+  }
 }
 .shopBadge {
   position: absolute;

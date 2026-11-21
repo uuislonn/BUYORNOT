@@ -192,14 +192,6 @@
   color: #797982;
   font-size: 12px;
 }
-.sort select {
-  border: 0;
-  border-bottom: 1px solid #111;
-  background: transparent;
-  color: #111;
-  padding: 5px;
-  cursor: pointer;
-}
 .feedTop {
   display: flex;
   justify-content: space-between;
@@ -268,6 +260,7 @@
   display: block !important;
   aspect-ratio: 1/1.12;
   position: relative;
+  isolation: isolate;
   overflow: hidden;
   background: #e8e7e4;
 }
@@ -850,10 +843,27 @@
   right: 12px;
   bottom: 12px;
   justify-content: flex-start;
+  flex-wrap: wrap;
+  text-align: left;
   gap: 8px;
   padding: 0;
   background: none;
   letter-spacing: 0;
+}
+.brandBadge {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - 24px);
+  color: #fff;
+  padding: 0;
+  text-align: center;
+  font-size: 10px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .imageCaption span,
 .imageCaption span:last-child {
@@ -865,6 +875,10 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+.imageCaption span:last-child {
+  flex-shrink: 0;
+  max-width: 100%;
 }
 .cardBody {
   padding: 10px 12px 14px;

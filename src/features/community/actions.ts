@@ -114,5 +114,5 @@ export async function votePost(id: string, choice: Choice) {
   return result(async () => store.vote(id, choice, await viewer()));
 }
 export async function getPost(id: string) {
-  return result(async () => store.detail(id, await viewer()));
+  return result(async () => store.open(id, await viewer()));
 }

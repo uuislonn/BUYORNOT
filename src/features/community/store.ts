@@ -131,6 +131,14 @@ export class CommunityStore {
       .filter((p) => this.canRead(p, viewer))
       .map((p) => this.detail(p.id, viewer));
   }
+  open(id: string, viewer: Viewer | null): FeedPost {
+    this.detail(id, viewer);
+    this.change(() => {
+      const post = this.posts.get(id)!;
+      post.views = (post.views ?? 0) + 1;
+    });
+    return this.detail(id, viewer);
+  }
   save(
     input: PostInput,
     viewer: Viewer | null,
@@ -185,6 +193,7 @@ export class CommunityStore {
       deletedAt: null,
       buy: previous?.buy ?? 0,
       not: previous?.not ?? 0,
+      views: previous?.views ?? 0,
     };
     this.change(() => {
       this.posts.set(post.id, post);

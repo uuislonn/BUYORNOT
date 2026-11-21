@@ -40,13 +40,6 @@
 .dot {
   color: #416cdb;
 }
-.back {
-  font-size: 13px;
-  font-weight: 500;
-}
-.back span {
-  margin-left: 14px;
-}
 .main {
   max-width: 1224px;
   margin: 20px auto 40px;
@@ -178,6 +171,37 @@
 }
 .password {
   position: relative;
+}
+.usernameRow {
+  display: flex;
+  gap: 8px;
+}
+.usernameRow input {
+  min-width: 0;
+  flex: 1;
+}
+.usernameCheck {
+  border: 1px solid #dde0e7;
+  border-radius: 7px;
+  background: #f4f6fb;
+  padding: 0 10px;
+  white-space: nowrap;
+  font-size: 12px !important;
+}
+.usernameCheck:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.usernameAvailable,
+.usernameError {
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+.usernameAvailable {
+  color: #18743b;
+}
+.usernameError {
+  color: #c32c32;
 }
 .password input {
   padding-right: 50px;

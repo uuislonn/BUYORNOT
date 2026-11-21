@@ -9,9 +9,11 @@ export default async function LoginPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const params = await searchParams;
+  const previewEnabled = process.env.NODE_ENV === "development";
   return (
     <LoginForm
-      configured={!!authConfig() || localTestEnabled()}
+      configured={!!authConfig() || localTestEnabled() || previewEnabled}
+      previewEnabled={previewEnabled}
       localTestEnabled={localTestEnabled()}
       kakaoEnabled={kakaoConfigured()}
       initialNotice={
