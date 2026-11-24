@@ -9,6 +9,8 @@
   "packageManager": "npm@11.9.0",
   "scripts": {
     "dev": "WATCHPACK_POLLING=true next dev --webpack --hostname 127.0.0.1",
+    "predev:team": "node scripts/setup-local-logins.mjs",
+    "dev:team": "npm run dev --",
     "build": "next build --webpack",
     "start": "next start --hostname 0.0.0.0",
     "lint": "eslint . --max-warnings=0",

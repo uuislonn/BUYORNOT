@@ -1,6 +1,6 @@
 # 통합본에서 함께 작업하기
 
-현재 공유 기준은 `integration/community-curation` 브랜치입니다. 홈·살말 커뮤니티·큐레이션 룸·추천 숍·로그인·마이페이지가 연결되어 있습니다.
+팀원 홈과 지혜의 수정 사항을 함께 확인하는 브랜치는 `feat/curation-next`입니다. 홈·살말 커뮤니티·큐레이션 룸·추천 숍·로그인·마이페이지가 연결되어 있습니다.
 
 ## 팀원: 기존 작업을 보존하고 시작
 
@@ -9,12 +9,12 @@ VS Code에서 BUYORNOT 폴더를 연 뒤 터미널에서 실행합니다. 수정
 ```bash
 git status
 git fetch origin
-git switch --track origin/feat/community-next
+git switch -c review-curation --track origin/feat/curation-next
 npm ci
-npm run dev
+npm run dev:team
 ```
 
-이미 해당 브랜치가 로컬에 있다면 `git switch feat/community-next`와 `git pull --ff-only`를 사용합니다. Node.js 24와 npm 11이 필요합니다. 터미널에 표시된 주소를 열면 홈 화면으로 들어갑니다.
+이미 검토 브랜치가 있다면 `git switch review-curation`과 `git pull --ff-only`를 사용합니다. Node.js 24와 npm 11이 필요합니다. 터미널에 표시된 주소를 열면 홈 화면으로 들어갑니다.
 
 지혜의 다음 작업 브랜치는 `feat/curation-next`입니다. 두 브랜치는 같은 통합본에서 시작합니다.
 
@@ -46,5 +46,7 @@ git merge origin/integration/community-curation
 ## 로컬 설정과 데이터
 
 소스와 이미지 자산은 공유되지만 `.env.local`, `.local-test-accounts/`, `.data/`는 Git에서 제외됩니다. 계정 비밀번호·서명 키·개인 활동 데이터는 GitHub에 올리지 않습니다. 따라서 다른 컴퓨터에는 지혜의 로컬 로그인 정보와 활동 목록이 자동 복사되지 않습니다. 커뮤니티 기본 상품과 큐레이션 기본 상품은 소스에 포함되어 있습니다.
+
+테스트 로그인은 `http://localhost:3000` 또는 `http://127.0.0.1:3000`의 개발 서버에서 사용합니다. `npm run dev:team`에서 새로 만든 비밀번호는 각 컴퓨터의 `.local-test-accounts/local-passwords.json`에서 확인합니다. 기존 계정 설정은 스크립트가 덮어쓰지 않습니다.
 
 실제 로그인 연결에는 `.env.example`을 참고해 본인의 `.env.local`을 설정합니다. 카카오 로그인은 Supabase 프로젝트 설정과 등록된 콜백 주소가 맞아야 합니다. 관리자 키는 브라우저 코드에 넣지 않습니다.
